@@ -24,21 +24,21 @@ export function PostCard({ author, community, content, timestamp, likes, comment
               </div>
             </div>
           </div>
-          <button className="p-1 rounded-full hover:bg-bg-tertiary text-text-secondary"><MoreHorizontal className="h-5 w-5" /></button>
+          <button className="p-1 rounded-full hover:bg-bg-tertiary text-text-secondary" aria-label="More options"><MoreHorizontal className="h-5 w-5" /></button>
         </div>
         <p className="text-text-primary whitespace-pre-wrap">{content}</p>
       </div>
       <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-        <button onClick={onLike} className={cn('flex items-center gap-2 text-sm transition-colors', liked ? 'text-accent' : 'text-text-secondary hover:text-text-primary')}>
+        <button onClick={onLike} className={cn('flex items-center gap-2 text-sm transition-colors', liked ? 'text-accent' : 'text-text-secondary hover:text-text-primary')} aria-label={liked ? 'Unlike' : 'Like'}>
           <Heart className={cn('h-5 w-5', liked && 'fill-current')} /><span>{likes}</span>
         </button>
-        <button onClick={onComment} className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors">
+        <button onClick={onComment} className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors" aria-label={`Comment (${comments})`}>
           <MessageCircle className="h-5 w-5" /><span>{comments}</span>
         </button>
-        <button onClick={onShare} className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors">
+        <button onClick={onShare} className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors" aria-label="Share">
           <Share2 className="h-5 w-5" /><span>Share</span>
         </button>
-        <button onClick={onSave} className={cn('transition-colors', saved ? 'text-accent' : 'text-text-secondary hover:text-text-primary')}>
+        <button onClick={onSave} className={cn('transition-colors', saved ? 'text-accent' : 'text-text-secondary hover:text-text-primary')} aria-label={saved ? 'Remove from bookmarks' : 'Bookmark'}>
           <Bookmark className={cn('h-5 w-5', saved && 'fill-current')} />
         </button>
       </div>

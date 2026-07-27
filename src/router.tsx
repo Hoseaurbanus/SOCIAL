@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router'
 import { AuthLayout } from './components/templates/auth-layout'
 import { AppLayout } from './components/templates/app-layout'
+import { ProtectedRoute } from './components/protected-route'
 import { lazy, Suspense } from 'react'
 
 function SuspenseLoader() {
@@ -45,16 +46,21 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <AppLayout />,
+    element: <ProtectedRoute />,
     children: [
-      { path: 'home', element: <Suspense fallback={<SuspenseLoader />}><HomePage /></Suspense> },
-      { path: 'discover', element: <Suspense fallback={<SuspenseLoader />}><DiscoverPage /></Suspense> },
-      { path: 'messages', element: <Suspense fallback={<SuspenseLoader />}><MessagesPage /></Suspense> },
-      { path: 'notifications', element: <Suspense fallback={<SuspenseLoader />}><NotificationsPage /></Suspense> },
-      { path: 'profile/:username?', element: <Suspense fallback={<SuspenseLoader />}><ProfilePage /></Suspense> },
-      { path: 'settings', element: <Suspense fallback={<SuspenseLoader />}><SettingsPage /></Suspense> },
-      { path: 'settings/privacy', element: <Suspense fallback={<SuspenseLoader />}><PrivacyPage /></Suspense> },
-      { path: 'settings/security', element: <Suspense fallback={<SuspenseLoader />}><SecurityPage /></Suspense> },
+      {
+        element: <AppLayout />,
+        children: [
+          { path: 'home', element: <Suspense fallback={<SuspenseLoader />}><HomePage /></Suspense> },
+          { path: 'discover', element: <Suspense fallback={<SuspenseLoader />}><DiscoverPage /></Suspense> },
+          { path: 'messages', element: <Suspense fallback={<SuspenseLoader />}><MessagesPage /></Suspense> },
+          { path: 'notifications', element: <Suspense fallback={<SuspenseLoader />}><NotificationsPage /></Suspense> },
+          { path: 'profile/:username?', element: <Suspense fallback={<SuspenseLoader />}><ProfilePage /></Suspense> },
+          { path: 'settings', element: <Suspense fallback={<SuspenseLoader />}><SettingsPage /></Suspense> },
+          { path: 'settings/privacy', element: <Suspense fallback={<SuspenseLoader />}><PrivacyPage /></Suspense> },
+          { path: 'settings/security', element: <Suspense fallback={<SuspenseLoader />}><SecurityPage /></Suspense> },
+        ],
+      },
     ],
   },
   { path: '*', element: <Suspense fallback={<SuspenseLoader />}><NotFoundPage /></Suspense> },

@@ -200,3 +200,12 @@ body {
   white-space: nowrap;
   border-width: 0;
 }
+
+/* Scrollbar hiding */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

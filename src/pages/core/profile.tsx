@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Settings, Grid3X3, Bookmark, Heart, MessageCircle } from 'lucide-react'
+import { useNavigate } from 'react-router'
 import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
 import { cn } from '@/lib/utils'
@@ -11,12 +13,19 @@ const tabs = [
 ]
 
 export default function ProfilePage() {
+  const [activeTab, setActiveTab] = useState('posts')
+  const navigate = useNavigate()
+
   return (
     <div className="max-w-[600px] mx-auto">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <h1 className="text-xl font-bold text-text-primary">Profile</h1>
-        <button className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary">
+        <button
+          onClick={() => navigate('/settings')}
+          className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary"
+          aria-label="Settings"
+        >
           <Settings className="h-5 w-5" />
         </button>
       </div>
@@ -38,13 +47,17 @@ export default function ProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-border" role="tablist" aria-label="Profile content">
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls={`panel-${tab.id}`}
+            onClick={() => setActiveTab(tab.id)}
             className={cn(
               'flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2',
-              tab.id === 'posts'
+              activeTab === tab.id
                 ? 'border-accent text-accent'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
             )}
@@ -55,9 +68,9 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      {/* Posts placeholder */}
-      <div className="p-8 text-center text-text-secondary">
-        <p>No posts yet</p>
+      {/* Tab Panels */}
+      <div id={`panel-${activeTab}`} role="tabpanel" aria-labelledby={activeTab} className="p-8 text-center text-text-secondary">
+        <p>No {activeTab} yet</p>
       </div>
     </div>
   )
