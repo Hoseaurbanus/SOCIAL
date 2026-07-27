@@ -6,7 +6,7 @@ import { useConversations } from '@/hooks/use-messages'
 import { useState } from 'react'
 
 export default function MessagesPage() {
-  const { data: conversations, isLoading } = useConversations()
+  const { data: conversations, isLoading, error } = useConversations()
   const [search, setSearch] = useState('')
 
   const filtered = conversations?.filter((c) =>
@@ -15,6 +15,17 @@ export default function MessagesPage() {
       p.username?.toLowerCase().includes(search.toLowerCase())
     )
   ) || []
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-text-secondary mb-2">Failed to load messages.</p>
+        <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+          Try again
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div>

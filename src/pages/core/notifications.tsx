@@ -13,11 +13,22 @@ const iconMap = {
 }
 
 export default function NotificationsPage() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useNotifications()
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useNotifications()
   const markRead = useMarkNotificationRead()
   const markAllRead = useMarkAllRead()
 
   const notifications = data?.pages.flatMap((p) => p.notifications) || []
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-text-secondary mb-2">Failed to load notifications.</p>
+        <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+          Try again
+        </Button>
+      </div>
+    )
+  }
 
   function getNotificationLink(notification: { type: string; from_user: { username: string }; post_id?: string }) {
     switch (notification.type) {

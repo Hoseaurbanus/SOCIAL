@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router'
 import { ChevronLeft, Send } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
+import { Button } from '@/components/atoms/button'
 import { useMessages, useSendMessage, useMarkAsRead } from '@/hooks/use-messages'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/config/supabase'
@@ -10,24 +11,29 @@ export default function ConversationPage() {
   const { conversationId } = useParams<{ conversationId: string }>()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
-  const { data: messages = [], isLoading } = useMessages(conversationId || '')
+  const { data: messages = [], isLoading: messagesLoading, error: messagesError } = useMessages(conversationId || '')
   const sendMessage = useSendMessage()
   const markAsRead = useMarkAsRead()
   const [newMessage, setNewMessage] = useState('')
   const [otherUser, setOtherUser] = useState<{ name: string; username: string; avatar?: string } | null>(null)
+  const [participantError, setParticipantError] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (!conversationId) return
     const loadParticipant = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('conversation_participants')
         .select('user:profiles(name, username, avatar)')
         .eq('conversation_id', conversationId)
         .neq('user_id', user?.id || '')
         .limit(1)
         .single()
+      if (error) {
+        setParticipantError(true)
+        return
+      }
       if (data?.user) setOtherUser(data.user as any)
     }
     loadParticipant()
@@ -65,16 +71,27 @@ export default function ConversationPage() {
         </button>
         <Avatar src={otherUser?.avatar} alt={otherUser?.name} size="sm" />
         <div>
-          <p className="text-sm font-medium text-text-primary">{otherUser?.name || 'Loading...'}</p>
-          <p className="text-xs text-text-tertiary">@{otherUser?.username}</p>
+          <p className="text-sm font-medium text-text-primary">
+            {participantError ? 'Unknown user' : otherUser?.name || 'Loading...'}
+          </p>
+          <p className="text-xs text-text-tertiary">
+            {participantError ? '' : `@${otherUser?.username}`}
+          </p>
         </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {isLoading ? (
+        {messagesLoading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent" />
+          </div>
+        ) : messagesError ? (
+          <div className="p-8 text-center">
+            <p className="text-text-secondary mb-2">Failed to load messages.</p>
+            <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+              Try again
+            </Button>
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-8">
@@ -104,6 +121,9 @@ export default function ConversationPage() {
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-border bg-bg-primary">
+        {sendMessage.isError && (
+          <p className="text-sm text-red-500 mb-2">Failed to send message. Please try again.</p>
+        )}
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}

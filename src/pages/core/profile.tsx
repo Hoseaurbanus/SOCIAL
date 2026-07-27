@@ -14,7 +14,7 @@ export default function ProfilePage() {
   const { data: profile, isLoading: profileLoading } = useProfile(username || currentUser?.username || '')
   const { data: followCounts } = useFollowCounts(profile?.id || '')
   const toggleFollow = useToggleFollow()
-  const { data: postsData, isLoading: postsLoading } = useUserPosts(profile?.id || '')
+  const { data: postsData, isLoading: postsLoading, error: postsError } = useUserPosts(profile?.id || '')
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
   const [activeTab, setActiveTab] = useState('posts')
@@ -140,7 +140,14 @@ export default function ProfilePage() {
 
       {/* Tab Content */}
       <div className="divide-y divide-border">
-        {postsLoading ? (
+        {postsError ? (
+          <div className="p-8 text-center">
+            <p className="text-text-secondary mb-2">Failed to load posts.</p>
+            <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+              Try again
+            </Button>
+          </div>
+        ) : postsLoading ? (
           [1, 2, 3].map((i) => (
             <div key={i} className="p-4 animate-pulse space-y-3">
               <div className="flex gap-3">
