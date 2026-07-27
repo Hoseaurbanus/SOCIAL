@@ -3,12 +3,14 @@ import { Search, Settings, Edit } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { useConversations } from '@/hooks/use-messages'
+import { UserSearchModal } from '@/components/organisms/user-search-modal'
 import { useState } from 'react'
 import { timeAgo } from '@/lib/timeago'
 
 export default function MessagesPage() {
   const { data: conversations, isLoading, error } = useConversations()
   const [search, setSearch] = useState('')
+  const [showNewMessage, setShowNewMessage] = useState(false)
 
   const filtered = conversations?.filter((c) =>
     c.participants.some((p) =>
@@ -37,7 +39,7 @@ export default function MessagesPage() {
           <Button variant="ghost" size="sm" aria-label="Settings">
             <Settings className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="sm" aria-label="New message">
+          <Button variant="ghost" size="sm" onClick={() => setShowNewMessage(true)} aria-label="New message">
             <Edit className="h-5 w-5" />
           </Button>
         </div>
@@ -109,6 +111,7 @@ export default function MessagesPage() {
           })}
         </div>
       )}
+      <UserSearchModal isOpen={showNewMessage} onClose={() => setShowNewMessage(false)} />
     </div>
   )
 }
