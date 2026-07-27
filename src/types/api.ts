@@ -29,6 +29,15 @@ export interface Post {
   user: Pick<User, 'id' | 'name' | 'username' | 'avatar'>
 }
 
+export interface Comment {
+  id: string
+  post_id: string
+  user_id: string
+  content: string
+  created_at: string
+  user: Pick<User, 'id' | 'name' | 'username' | 'avatar'>
+}
+
 export interface Story {
   id: string
   user_id: string

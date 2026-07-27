@@ -171,6 +171,7 @@ export default function ProfilePage() {
             posts.map((post) => (
               <PostCard
                 key={post.id}
+                postId={post.id}
                 author={post.user}
                 content={post.content}
                 images={post.images}
