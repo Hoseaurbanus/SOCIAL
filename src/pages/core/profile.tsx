@@ -4,7 +4,7 @@ import { Settings, MapPin, LinkIcon, Calendar } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { PostCard } from '@/components/molecules/post-card'
-import { useProfile, useFollowCounts, useToggleFollow } from '@/hooks/use-profile'
+import { useProfile, useFollowCounts, useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
 import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -14,6 +14,8 @@ export default function ProfilePage() {
   const { data: profile, isLoading: profileLoading } = useProfile(username || currentUser?.username || '')
   const { data: followCounts } = useFollowCounts(profile?.id || '')
   const toggleFollow = useToggleFollow()
+  const { data: isFollowing } = useFollowStatus(profile?.id ? [profile.id] : [])
+  const following = isFollowing?.[profile.id] || false
   const { data: postsData, isLoading: postsLoading, error: postsError } = useUserPosts(profile?.id || '')
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
@@ -71,12 +73,12 @@ export default function ProfilePage() {
             <Button variant="secondary" size="sm">Edit Profile</Button>
           ) : (
             <Button
-              variant="primary"
+              variant={following ? 'secondary' : 'primary'}
               size="sm"
               onClick={() => toggleFollow.mutate(profile.id)}
               loading={toggleFollow.isPending}
             >
-              Follow
+              {following ? 'Following' : 'Follow'}
             </Button>
           )}
         </div>
