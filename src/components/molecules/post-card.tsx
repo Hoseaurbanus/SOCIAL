@@ -5,12 +5,12 @@ import { cn } from '@/lib/utils'
 
 interface PostCardProps {
   author: { name: string; username: string; avatar?: string }
-  community?: string; content: string; timestamp: string
+  community?: string; content: string; images?: string[]; timestamp: string
   likes: number; comments: number; liked?: boolean; saved?: boolean
   onLike?: () => void; onComment?: () => void; onShare?: () => void; onSave?: () => void
 }
 
-export function PostCard({ author, community, content, timestamp, likes, comments, liked = false, saved = false, onLike, onComment, onShare, onSave }: PostCardProps) {
+export function PostCard({ author, community, content, images, timestamp, likes, comments, liked = false, saved = false, onLike, onComment, onShare, onSave }: PostCardProps) {
   return (
     <Card padding="none">
       <div className="p-4">
@@ -27,6 +27,13 @@ export function PostCard({ author, community, content, timestamp, likes, comment
           <button className="p-1 rounded-full hover:bg-bg-tertiary text-text-secondary" aria-label="More options"><MoreHorizontal className="h-5 w-5" /></button>
         </div>
         <p className="text-text-primary whitespace-pre-wrap">{content}</p>
+        {images && images.length > 0 && (
+          <div className={`mt-3 grid gap-1 rounded-lg overflow-hidden ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {images.map((img, i) => (
+              <img key={i} src={img} alt={`Post image ${i + 1}`} className="w-full h-auto object-cover max-h-80" loading="lazy" />
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-between px-4 py-3 border-t border-border">
         <button onClick={onLike} className={cn('flex items-center gap-2 text-sm transition-colors', liked ? 'text-accent' : 'text-text-secondary hover:text-text-primary')} aria-label={liked ? 'Unlike' : 'Like'}>

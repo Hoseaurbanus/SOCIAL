@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Image, Smile, MapPin, Loader2 } from 'lucide-react'
+import { X, Image, Smile, MapPin } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
 import { useCreatePost } from '@/hooks/use-posts'

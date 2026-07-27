@@ -30,8 +30,12 @@ function buildProfile(user: any): User {
     name: user.user_metadata?.name || user.email?.split('@')[0] || user.phone || '',
     username: user.user_metadata?.username || user.email?.split('@')[0] || user.phone || '',
     avatar: user.user_metadata?.avatar,
-    isPrivate: false,
-    createdAt: user.created_at,
+    bio: undefined,
+    website: undefined,
+    location: undefined,
+    is_private: false,
+    created_at: user.created_at,
+    updated_at: user.created_at,
   }
 }
 

@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -31,15 +32,19 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   loading?: boolean
   icon?: React.ReactNode
   iconPosition?: 'left' | 'right'
+  asChild?: boolean
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, fullWidth, loading, icon, iconPosition = 'left', children, disabled, ...props }, ref) => (
-    <button className={cn(buttonVariants({ variant, size, fullWidth, className }))} ref={ref} disabled={disabled || loading} {...props}>
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon && iconPosition === 'left' ? icon : null}
-      {children}
-      {!loading && icon && iconPosition === 'right' ? icon : null}
-    </button>
-  )
+  ({ className, variant, size, fullWidth, loading, icon, iconPosition = 'left', children, disabled, asChild, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'button'
+    return (
+      <Comp className={cn(buttonVariants({ variant, size, fullWidth, className }))} ref={ref} disabled={disabled || loading} {...props}>
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon && iconPosition === 'left' ? icon : null}
+        {children}
+        {!loading && icon && iconPosition === 'right' ? icon : null}
+      </Comp>
+    )
+  }
 )
 Button.displayName = 'Button'
