@@ -30,8 +30,12 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setIsValidSession(!!session)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        setIsValidSession(!!session)
+      } catch {
+        setIsValidSession(false)
+      }
     }
     checkSession()
   }, [])

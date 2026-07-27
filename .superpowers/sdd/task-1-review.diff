@@ -1,0 +1,31 @@
+﻿diff --git a/src/stores/auth-store.ts b/src/stores/auth-store.ts
+index de747fb..8c5b878 100644
+--- a/src/stores/auth-store.ts
++++ b/src/stores/auth-store.ts
+@@ -97,25 +97,24 @@ export const useAuthStore = create<AuthState>()(
+             data: { name, username: name.toLowerCase().replace(/\s+/g, '') },
+           },
+         })
+         if (error) return { error: error.message }
+ 
+         set({ pendingVerification: { identifier: phone, type: 'phone' } })
+         return { needsVerification: true }
+       },
+ 
+       verifyOtp: async (identifier, token, type) => {
+-        const method = type === 'email' ? 'magiclink' : 'sms'
+         const { data, error } = await supabase.auth.verifyOtp({
+           [type]: identifier,
+           token,
+-          type: method,
++          type: type === 'email' ? 'email' : 'sms',
+         } as any)
+         if (error) return { error: error.message }
+ 
+         if (data.session && data.user) {
+           set({
+             user: buildProfile(data.user),
+             token: data.session.access_token,
+             isAuthenticated: true,
+             isLoading: false,
+             pendingVerification: null,
