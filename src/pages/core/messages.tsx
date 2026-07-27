@@ -4,6 +4,7 @@ import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { useConversations } from '@/hooks/use-messages'
 import { useState } from 'react'
+import { timeAgo } from '@/lib/timeago'
 
 export default function MessagesPage() {
   const { data: conversations, isLoading, error } = useConversations()
@@ -96,7 +97,7 @@ export default function MessagesPage() {
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-text-primary truncate">{other.name}</p>
                     {conv.lastMessage && (
-                      <p className="text-xs text-text-tertiary">{new Date(conv.lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-xs text-text-tertiary">{timeAgo(conv.lastMessage.created_at)}</p>
                     )}
                   </div>
                   {conv.lastMessage && (

@@ -3,6 +3,7 @@ import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { useNotifications, useMarkNotificationRead, useMarkAllRead } from '@/hooks/use-notifications'
 import { Link } from 'react-router'
+import { timeAgo } from '@/lib/timeago'
 
 const iconMap = {
   like: { icon: Heart, color: 'text-red-500', bg: 'bg-red-500/10' },
@@ -113,7 +114,7 @@ export default function NotificationsPage() {
                     </p>
                   </div>
                   <p className="text-xs text-text-tertiary mt-1">
-                    {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {timeAgo(notification.created_at)}
                   </p>
                 </div>
                 {!notification.is_read && (

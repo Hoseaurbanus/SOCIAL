@@ -2,6 +2,7 @@ import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal } from 'lucide-r
 import { Avatar } from '@/components/atoms/avatar'
 import { Card } from '@/components/molecules/card'
 import { cn } from '@/lib/utils'
+import { timeAgo } from '@/lib/timeago'
 
 interface PostCardProps {
   author: { name: string; username: string; avatar?: string }
@@ -20,7 +21,7 @@ export function PostCard({ author, community, content, images, timestamp, likes,
             <div>
               <div className="font-semibold text-text-primary">{author.name}</div>
               <div className="text-sm text-text-secondary">
-                {community && <span>in {community} · </span>}{timestamp}
+                {community && <span>in {community} · </span>}{timeAgo(timestamp)}
               </div>
             </div>
           </div>
