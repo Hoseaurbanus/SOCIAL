@@ -4,6 +4,7 @@ import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
 import { useCreatePost } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
+import { supabase } from '@/config/supabase'
 import { cn } from '@/lib/utils'
 
 interface ComposeModalProps {
@@ -14,7 +15,10 @@ interface ComposeModalProps {
 export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
   const [content, setContent] = useState('')
   const [error, setError] = useState('')
+  const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const createPost = useCreatePost()
   const user = useAuthStore((s) => s.user)
 
@@ -36,23 +40,60 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
   const handleClose = () => {
     setContent('')
     setError('')
+    setSelectedImages([])
     onClose()
   }
 
-  const handleSubmit = () => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const validFiles = files.slice(0, 4 - selectedImages.length)
+    setSelectedImages((prev) => [...prev, ...validFiles])
+  }
+
+  const removeImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (selectedImages.length === 0) return []
+    setUploading(true)
+    try {
+      const urls: string[] = []
+      for (const file of selectedImages) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+        const filePath = `posts/${fileName}`
+        const { error } = await supabase.storage.from('posts').upload(filePath, file)
+        if (error) throw error
+        const { data: urlData } = supabase.storage.from('posts').getPublicUrl(filePath)
+        urls.push(urlData.publicUrl)
+      }
+      return urls
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleSubmit = async () => {
     if (!content.trim()) return
     setError('')
-    createPost.mutate(
-      { content: content.trim() },
-      {
-        onSuccess: () => {
-          setContent('')
-          setError('')
-          onClose()
-        },
-        onError: (err) => setError(err.message || 'Failed to create post'),
-      }
-    )
+    try {
+      const imageUrls = await uploadImages()
+      createPost.mutate(
+        { content: content.trim(), images: imageUrls.length > 0 ? imageUrls : undefined },
+        {
+          onSuccess: () => {
+            setContent('')
+            setSelectedImages([])
+            setError('')
+            onClose()
+          },
+          onError: (err) => setError(err.message || 'Failed to create post'),
+        }
+      )
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload images')
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -77,7 +118,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
           <Button
             size="sm"
             disabled={!content.trim()}
-            loading={createPost.isPending}
+            loading={createPost.isPending || uploading}
             onClick={handleSubmit}
           >
             Post
@@ -91,6 +132,21 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
               {error}
             </div>
           )}
+
+          {/* Image Previews */}
+          {selectedImages.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto mb-3">
+              {selectedImages.map((file, i) => (
+                <div key={i} className="relative flex-shrink-0">
+                  <img src={URL.createObjectURL(file)} alt="" className="h-20 w-20 object-cover rounded-lg" />
+                  <button onClick={() => removeImage(i)} className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-bg-primary border border-border flex items-center justify-center">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-3">
             <Avatar src={user?.avatar} alt={user?.name} size="md" />
             <div className="flex-1 min-w-0">
@@ -112,7 +168,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-border">
           <div className="flex items-center gap-1">
-            <button className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add image">
+            <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add image">
               <Image className="h-5 w-5" />
             </button>
             <button className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add emoji">
@@ -127,6 +183,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
           </span>
         </div>
       </div>
+      <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
     </div>
   )
 }
