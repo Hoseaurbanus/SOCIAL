@@ -1,0 +1,149 @@
+import { supabase } from '@/config/supabase'
+import type { Post } from '@/types/api'
+
+export async function fetchFeedPosts(page = 1, pageSize = 20) {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
+    .from('posts')
+    .select('*, user:profiles(id, name, username, avatar)', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) throw error
+  return { posts: (data || []) as Post[], total: count || 0 }
+}
+
+export async function fetchPostsByUser(userId: string, page = 1, pageSize = 20) {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
+    .from('posts')
+    .select('*, user:profiles(id, name, username, avatar)', { count: 'exact' })
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) throw error
+  return { posts: (data || []) as Post[], total: count || 0 }
+}
+
+export async function createPost(content: string, images?: string[]) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabase
+    .from('posts')
+    .insert({ user_id: user.id, content, images })
+    .select('*, user:profiles(id, name, username, avatar)')
+    .single()
+
+  if (error) throw error
+  return data as Post
+}
+
+export async function deletePost(postId: string) {
+  const { error } = await supabase.from('posts').delete().eq('id', postId)
+  if (error) throw error
+}
+
+export async function toggleLike(postId: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data: existing } = await supabase
+    .from('likes')
+    .select()
+    .eq('user_id', user.id)
+    .eq('post_id', postId)
+    .single()
+
+  if (existing) {
+    await supabase.from('likes').delete().eq('user_id', user.id).eq('post_id', postId)
+    await supabase.rpc('decrement_likes', { post_id: postId })
+    return false
+  } else {
+    await supabase.from('likes').insert({ user_id: user.id, post_id: postId })
+    await supabase.rpc('increment_likes', { post_id: postId })
+    return true
+  }
+}
+
+export async function toggleBookmark(postId: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data: existing } = await supabase
+    .from('bookmarks')
+    .select()
+    .eq('user_id', user.id)
+    .eq('post_id', postId)
+    .single()
+
+  if (existing) {
+    await supabase.from('bookmarks').delete().eq('user_id', user.id).eq('post_id', postId)
+    return false
+  } else {
+    await supabase.from('bookmarks').insert({ user_id: user.id, post_id: postId })
+    return true
+  }
+}
+
+export async function fetchPostComments(postId: string) {
+  const { data, error } = await supabase
+    .from('comments')
+    .select('*, user:profiles(id, name, username, avatar)')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function addComment(postId: string, content: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabase
+    .from('comments')
+    .insert({ post_id: postId, user_id: user.id, content })
+    .select('*, user:profiles(id, name, username, avatar)')
+    .single()
+
+  if (error) throw error
+
+  await supabase.rpc('increment_comments', { post_id: postId })
+  return data
+}
+
+export async function checkLikeStatus(postIds: string[]) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return {}
+
+  const { data } = await supabase
+    .from('likes')
+    .select('post_id')
+    .eq('user_id', user.id)
+    .in('post_id', postIds)
+
+  const liked: Record<string, boolean> = {}
+  data?.forEach((l) => { liked[l.post_id] = true })
+  return liked
+}
+
+export async function checkBookmarkStatus(postIds: string[]) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return {}
+
+  const { data } = await supabase
+    .from('bookmarks')
+    .select('post_id')
+    .eq('user_id', user.id)
+    .in('post_id', postIds)
+
+  const bookmarked: Record<string, boolean> = {}
+  data?.forEach((b) => { bookmarked[b.post_id] = true })
+  return bookmarked
+}

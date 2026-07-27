@@ -24,6 +24,7 @@ const DiscoverPage = lazy(() => import('./pages/core/discover'))
 const MessagesPage = lazy(() => import('./pages/core/messages'))
 const NotificationsPage = lazy(() => import('./pages/core/notifications'))
 const ProfilePage = lazy(() => import('./pages/core/profile'))
+const ConversationPage = lazy(() => import('./pages/core/conversation'))
 const SettingsPage = lazy(() => import('./pages/social/settings'))
 const PrivacyPage = lazy(() => import('./pages/social/privacy'))
 const SecurityPage = lazy(() => import('./pages/social/security'))
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
           { path: 'home', element: <Suspense fallback={<SuspenseLoader />}><HomePage /></Suspense> },
           { path: 'discover', element: <Suspense fallback={<SuspenseLoader />}><DiscoverPage /></Suspense> },
           { path: 'messages', element: <Suspense fallback={<SuspenseLoader />}><MessagesPage /></Suspense> },
+          { path: 'messages/:conversationId', element: <Suspense fallback={<SuspenseLoader />}><ConversationPage /></Suspense> },
           { path: 'notifications', element: <Suspense fallback={<SuspenseLoader />}><NotificationsPage /></Suspense> },
           { path: 'profile/:username?', element: <Suspense fallback={<SuspenseLoader />}><ProfilePage /></Suspense> },
           { path: 'settings', element: <Suspense fallback={<SuspenseLoader />}><SettingsPage /></Suspense> },

@@ -12,41 +12,40 @@ export interface User {
   bio?: string
   website?: string
   location?: string
-  isPrivate: boolean
-  createdAt: string
+  is_private: boolean
+  created_at: string
+  updated_at: string
 }
 
 export interface Post {
   id: string
-  userId: string
+  user_id: string
   content: string
   images?: string[]
-  likesCount: number
-  commentsCount: number
-  sharesCount: number
-  isLiked: boolean
-  isBookmarked: boolean
-  createdAt: string
+  likes_count: number
+  comments_count: number
+  shares_count: number
+  created_at: string
   user: Pick<User, 'id' | 'name' | 'username' | 'avatar'>
 }
 
 export interface Story {
   id: string
-  userId: string
-  mediaUrl: string
-  mediaType: 'image' | 'video'
-  createdAt: string
-  expiresAt: string
+  user_id: string
+  media_url: string
+  media_type: 'image' | 'video'
+  created_at: string
+  expires_at: string
   user: Pick<User, 'id' | 'name' | 'username' | 'avatar'>
 }
 
 export interface Message {
   id: string
-  conversationId: string
-  senderId: string
+  conversation_id: string
+  sender_id: string
   content: string
-  createdAt: string
-  readAt?: string
+  created_at: string
+  read_at?: string
 }
 
 export interface Conversation {
@@ -59,9 +58,11 @@ export interface Conversation {
 export interface Notification {
   id: string
   type: 'like' | 'comment' | 'follow' | 'mention' | 'message'
-  fromUser: Pick<User, 'id' | 'name' | 'username' | 'avatar'>
-  postId?: string
+  user_id: string
+  from_user_id: string
+  from_user: Pick<User, 'id' | 'name' | 'username' | 'avatar'>
+  post_id?: string
   message: string
-  isRead: boolean
-  createdAt: string
+  is_read: boolean
+  created_at: string
 }

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router'
 import { ChevronLeft, ChevronRight, User, Shield, Lock, Bell, Sparkles, Palette, HelpCircle, LogOut } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface SettingsItemProps {
   icon: React.ReactNode
@@ -23,9 +24,15 @@ function SettingsItem({ icon, label, description, onClick }: SettingsItemProps) 
 
 export default function SettingsPage() {
   const navigate = useNavigate()
+  const logout = useAuthStore((s) => s.logout)
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login')
+  }
 
   return (
-    <div className="max-w-[600px] mx-auto">
+    <div>
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
         <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary">
           <ChevronLeft className="h-5 w-5" />
@@ -60,7 +67,7 @@ export default function SettingsPage() {
           <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider">Support</h3>
         </div>
         <SettingsItem icon={<HelpCircle className="h-5 w-5" />} label="Help & Support" description="FAQ, contact us" onClick={() => {}} />
-        <SettingsItem icon={<LogOut className="h-5 w-5" />} label="Log Out" description="Sign out of your account" onClick={() => {}} />
+        <SettingsItem icon={<LogOut className="h-5 w-5" />} label="Log Out" description="Sign out of your account" onClick={handleLogout} />
       </div>
     </div>
   )

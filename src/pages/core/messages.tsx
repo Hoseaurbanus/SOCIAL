@@ -1,55 +1,102 @@
-import { Search, Edit } from 'lucide-react'
+import { Link } from 'react-router'
+import { Search, Settings, Edit } from 'lucide-react'
+import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
-
-const conversations = [
-  { id: '1', name: 'Alex Johnson', lastMessage: 'Hey, did you see the new design tokens?', time: '2m', unread: 2, online: true },
-  { id: '2', name: 'Sarah Chen', lastMessage: 'The TypeScript update looks great!', time: '15m', unread: 0, online: true },
-  { id: '3', name: 'Marcus Rivera', lastMessage: 'Let me know when you are free to chat', time: '1h', unread: 1, online: false },
-  { id: '4', name: 'Kim Lee', lastMessage: 'Thanks for the feedback!', time: '3h', unread: 0, online: false },
-  { id: '5', name: 'Taylor Wilson', lastMessage: 'See you at the meetup tomorrow', time: '1d', unread: 0, online: false },
-]
+import { useConversations } from '@/hooks/use-messages'
+import { useState } from 'react'
 
 export default function MessagesPage() {
+  const { data: conversations, isLoading } = useConversations()
+  const [search, setSearch] = useState('')
+
+  const filtered = conversations?.filter((c) =>
+    c.participants.some((p) =>
+      p.name?.toLowerCase().includes(search.toLowerCase()) ||
+      p.username?.toLowerCase().includes(search.toLowerCase())
+    )
+  ) || []
+
   return (
-    <div className="max-w-[600px] mx-auto">
+    <div>
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h1 className="text-xl font-bold text-text-primary">Messages</h1>
-        <button className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary">
-          <Edit className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" aria-label="Settings">
+            <Settings className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="sm" aria-label="New message">
+            <Edit className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
       <div className="px-4 py-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
-          <input type="text" placeholder="Search messages..." className="w-full h-10 pl-10 pr-4 rounded-lg border border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors" />
+          <input
+            type="text"
+            placeholder="Search messages..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-10 pl-10 pr-4 rounded-lg border border-border bg-bg-secondary text-text-primary text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors"
+            aria-label="Search messages"
+          />
         </div>
       </div>
 
       {/* Conversations */}
-      <div className="divide-y divide-border">
-        {conversations.map((conv) => (
-          <button key={conv.id} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-bg-tertiary transition-colors text-left">
-            <div className="relative">
-              <Avatar alt={conv.name} size="md" />
-              {conv.online && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-success border-2 border-bg-primary" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-text-primary truncate">{conv.name}</span>
-                <span className="text-sm text-text-tertiary">{conv.time}</span>
+      {isLoading ? (
+        <div className="divide-y divide-border">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
+              <div className="h-12 w-12 rounded-full bg-bg-tertiary" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-32 bg-bg-tertiary rounded" />
+                <div className="h-3 w-48 bg-bg-tertiary rounded" />
               </div>
-              <p className="text-sm text-text-secondary truncate">{conv.lastMessage}</p>
             </div>
-            {conv.unread > 0 && (
-              <span className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs font-medium rounded-full bg-accent text-text-inverse">
-                {conv.unread}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="p-8 text-center">
+          <p className="text-text-secondary mb-2">No conversations yet</p>
+          <p className="text-text-tertiary text-sm">Start a conversation with someone.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-border">
+          {filtered.map((conv) => {
+            const other = conv.participants[0]
+            if (!other) return null
+            return (
+              <Link
+                key={conv.id}
+                to={`/messages/${conv.id}`}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-bg-secondary transition-colors"
+              >
+                <Avatar
+                  src={other.avatar}
+                  alt={other.name}
+                  size="md"
+                  status="online"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-text-primary truncate">{other.name}</p>
+                    {conv.lastMessage && (
+                      <p className="text-xs text-text-tertiary">{new Date(conv.lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    )}
+                  </div>
+                  {conv.lastMessage && (
+                    <p className="text-sm text-text-secondary truncate">{conv.lastMessage.content}</p>
+                  )}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

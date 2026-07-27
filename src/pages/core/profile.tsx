@@ -1,76 +1,180 @@
 import { useState } from 'react'
-import { Settings, Grid3X3, Bookmark, Heart, MessageCircle } from 'lucide-react'
-import { useNavigate } from 'react-router'
-import { Avatar } from '@/components/atoms/avatar'
+import { Link, useParams } from 'react-router'
+import { Settings, MapPin, LinkIcon, Calendar } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
-import { cn } from '@/lib/utils'
-
-const tabs = [
-  { id: 'posts', label: 'Posts', icon: Grid3X3 },
-  { id: 'replies', label: 'Replies', icon: MessageCircle },
-  { id: 'likes', label: 'Likes', icon: Heart },
-  { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
-]
+import { Avatar } from '@/components/atoms/avatar'
+import { PostCard } from '@/components/molecules/post-card'
+import { useProfile, useFollowCounts, useToggleFollow } from '@/hooks/use-profile'
+import { useUserPosts, useToggleLike, useToggleBookmark } from '@/hooks/use-posts'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function ProfilePage() {
+  const { username } = useParams<{ username: string }>()
+  const currentUser = useAuthStore((s) => s.user)
+  const { data: profile, isLoading: profileLoading } = useProfile(username || currentUser?.username || '')
+  const { data: followCounts } = useFollowCounts(profile?.id || '')
+  const toggleFollow = useToggleFollow()
+  const { data: postsData, isLoading: postsLoading } = useUserPosts(profile?.id || '')
+  const toggleLike = useToggleLike()
+  const toggleBookmark = useToggleBookmark()
   const [activeTab, setActiveTab] = useState('posts')
-  const navigate = useNavigate()
+
+  const posts = postsData?.pages.flatMap((p) => p.posts) || []
+  const isOwnProfile = currentUser?.username === username || (!username && currentUser?.username)
+
+  if (profileLoading) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-32 bg-bg-tertiary" />
+        <div className="px-4 -mt-12">
+          <div className="h-24 w-24 rounded-full bg-bg-tertiary border-4 border-bg-primary" />
+          <div className="mt-3 space-y-2">
+            <div className="h-5 w-32 bg-bg-tertiary rounded" />
+            <div className="h-4 w-24 bg-bg-tertiary rounded" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-text-secondary">User not found</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="max-w-[600px] mx-auto">
+    <div>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-        <h1 className="text-xl font-bold text-text-primary">Profile</h1>
-        <button
-          onClick={() => navigate('/settings')}
-          className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary"
-          aria-label="Settings"
-        >
-          <Settings className="h-5 w-5" />
-        </button>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div>
+          <h1 className="text-lg font-bold text-text-primary">{profile.name}</h1>
+          <p className="text-sm text-text-tertiary">{posts.length} posts</p>
+        </div>
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/settings">
+            <Settings className="h-5 w-5" />
+          </Link>
+        </Button>
       </div>
 
       {/* Profile Info */}
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-4">
-          <Avatar size="xl" />
-          <Button variant="secondary" size="sm">Edit Profile</Button>
+      <div className="px-4 pb-4">
+        <div className="flex items-end justify-between -mt-12 mb-3">
+          <Avatar src={profile.avatar} alt={profile.name} size="2xl" className="border-4 border-bg-primary" />
+          {isOwnProfile ? (
+            <Button variant="secondary" size="sm">Edit Profile</Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => toggleFollow.mutate(profile.id)}
+              loading={toggleFollow.isPending}
+            >
+              Follow
+            </Button>
+          )}
         </div>
-        <h2 className="text-xl font-bold text-text-primary">John Doe</h2>
-        <p className="text-text-secondary">@johndoe</p>
-        <p className="text-text-primary mt-2">Building cool things with code. Design enthusiast. Coffee lover.</p>
-        <div className="flex items-center gap-4 mt-3 text-sm text-text-secondary">
-          <span><strong className="text-text-primary">1,234</strong> posts</span>
-          <span><strong className="text-text-primary">5,678</strong> followers</span>
-          <span><strong className="text-text-primary">890</strong> following</span>
+
+        <h2 className="text-xl font-bold text-text-primary">{profile.name}</h2>
+        <p className="text-text-secondary">@{profile.username}</p>
+
+        {profile.bio && (
+          <p className="mt-2 text-text-primary">{profile.bio}</p>
+        )}
+
+        <div className="flex items-center gap-4 mt-3 text-sm text-text-tertiary">
+          {profile.location && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              {profile.location}
+            </span>
+          )}
+          {profile.website && (
+            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-accent hover:text-accent-hover">
+              <LinkIcon className="h-4 w-4" />
+              {profile.website.replace(/^https?:\/\//, '')}
+            </a>
+          )}
+          <span className="flex items-center gap-1">
+            <Calendar className="h-4 w-4" />
+            Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+          </span>
+        </div>
+
+        <div className="flex gap-4 mt-3">
+          <span className="text-sm">
+            <strong className="text-text-primary">{followCounts?.following || 0}</strong>{' '}
+            <span className="text-text-tertiary">Following</span>
+          </span>
+          <span className="text-sm">
+            <strong className="text-text-primary">{followCounts?.followers || 0}</strong>{' '}
+            <span className="text-text-tertiary">Followers</span>
+          </span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border" role="tablist" aria-label="Profile content">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            aria-controls={`panel-${tab.id}`}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2',
-              activeTab === tab.id
-                ? 'border-accent text-accent'
-                : 'border-transparent text-text-secondary hover:text-text-primary'
-            )}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="border-b border-border">
+        <div className="flex">
+          {['posts', 'replies', 'likes', 'bookmarks'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-3 text-sm font-medium text-center capitalize border-b-2 transition-colors ${
+                activeTab === tab
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Tab Panels */}
-      <div id={`panel-${activeTab}`} role="tabpanel" aria-labelledby={activeTab} className="p-8 text-center text-text-secondary">
-        <p>No {activeTab} yet</p>
+      {/* Tab Content */}
+      <div className="divide-y divide-border">
+        {postsLoading ? (
+          [1, 2, 3].map((i) => (
+            <div key={i} className="p-4 animate-pulse space-y-3">
+              <div className="flex gap-3">
+                <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-32 bg-bg-tertiary rounded" />
+                  <div className="h-3 w-48 bg-bg-tertiary rounded" />
+                </div>
+              </div>
+              <div className="h-16 bg-bg-tertiary rounded" />
+            </div>
+          ))
+        ) : activeTab === 'posts' ? (
+          posts.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-text-secondary">No posts yet</p>
+            </div>
+          ) : (
+            posts.map((post) => (
+              <PostCard
+                key={post.id}
+                author={post.user}
+                content={post.content}
+                images={post.images}
+                timestamp={post.created_at}
+                likes={post.likes_count}
+                comments={post.comments_count}
+                onLike={() => toggleLike.mutate(post.id)}
+                onSave={() => toggleBookmark.mutate(post.id)}
+              />
+            ))
+          )
+        ) : (
+          <div className="p-8 text-center">
+            <p className="text-text-secondary">No {activeTab} yet</p>
+          </div>
+        )}
       </div>
     </div>
   )
