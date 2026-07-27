@@ -9,12 +9,29 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   isLoading: boolean
+  pendingVerification: { identifier: string; type: 'email' | 'phone' } | null
   setSession: (session: Session | null, profile?: User | null) => void
   login: (email: string, password: string) => Promise<{ error?: string }>
-  signup: (email: string, password: string, name: string) => Promise<{ error?: string }>
+  signup: (email: string, password: string, name: string) => Promise<{ error?: string; needsVerification?: boolean }>
+  signupWithPhone: (phone: string, password: string, name: string) => Promise<{ error?: string; needsVerification?: boolean }>
+  verifyOtp: (identifier: string, token: string, type: 'email' | 'phone') => Promise<{ error?: string }>
+  resendOtp: (identifier: string, type: 'email' | 'phone') => Promise<{ error?: string }>
   logout: () => Promise<void>
   updateUser: (userData: Partial<User>) => void
   initialize: () => Promise<void>
+}
+
+function buildProfile(user: any): User {
+  return {
+    id: user.id,
+    email: user.email || '',
+    phone: user.phone || '',
+    name: user.user_metadata?.name || user.email?.split('@')[0] || user.phone || '',
+    username: user.user_metadata?.username || user.email?.split('@')[0] || user.phone || '',
+    avatar: user.user_metadata?.avatar,
+    isPrivate: false,
+    createdAt: user.created_at,
+  }
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -24,6 +41,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       isLoading: true,
+      pendingVerification: null,
 
       setSession: (session, profile) => {
         if (session && profile) {
@@ -32,6 +50,7 @@ export const useAuthStore = create<AuthState>()(
             token: session.access_token,
             isAuthenticated: true,
             isLoading: false,
+            pendingVerification: null,
           })
         } else {
           set({ user: null, token: null, isAuthenticated: false, isLoading: false })
@@ -43,17 +62,8 @@ export const useAuthStore = create<AuthState>()(
         if (error) return { error: error.message }
 
         if (data.user) {
-          const profile: User = {
-            id: data.user.id,
-            email: data.user.email || '',
-            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || '',
-            username: data.user.user_metadata?.username || data.user.email?.split('@')[0] || '',
-            avatar: data.user.user_metadata?.avatar,
-            isPrivate: false,
-            createdAt: data.user.created_at,
-          }
           set({
-            user: profile,
+            user: buildProfile(data.user),
             token: data.session.access_token,
             isAuthenticated: true,
             isLoading: false,
@@ -72,22 +82,77 @@ export const useAuthStore = create<AuthState>()(
         })
         if (error) return { error: error.message }
 
-        if (data.user && data.session) {
-          const profile: User = {
-            id: data.user.id,
-            email: data.user.email || '',
-            name,
-            username: name.toLowerCase().replace(/\s+/g, ''),
-            isPrivate: false,
-            createdAt: data.user.created_at,
+        if (data.user) {
+          const emailConfirmed = data.user.email_confirmed_at != null
+          if (emailConfirmed && data.session) {
+            set({
+              user: buildProfile(data.user),
+              token: data.session.access_token,
+              isAuthenticated: true,
+              isLoading: false,
+            })
+            return {}
           }
+          set({ pendingVerification: { identifier: email, type: 'email' } })
+          return { needsVerification: true }
+        }
+        return {}
+      },
+
+      signupWithPhone: async (phone, password, name) => {
+        const { data, error } = await supabase.auth.signUp({
+          phone,
+          password,
+          options: {
+            data: { name, username: name.toLowerCase().replace(/\s+/g, '') },
+          },
+        })
+        if (error) return { error: error.message }
+
+        if (data.user) {
+          const phoneConfirmed = data.user.phone_confirmed_at != null
+          if (phoneConfirmed && data.session) {
+            set({
+              user: buildProfile(data.user),
+              token: data.session.access_token,
+              isAuthenticated: true,
+              isLoading: false,
+            })
+            return {}
+          }
+          set({ pendingVerification: { identifier: phone, type: 'phone' } })
+          return { needsVerification: true }
+        }
+        return {}
+      },
+
+      verifyOtp: async (identifier, token, type) => {
+        const method = type === 'email' ? 'signup' : 'sms'
+        const { data, error } = await supabase.auth.verifyOtp({
+          [type]: identifier,
+          token,
+          type: method,
+        } as any)
+        if (error) return { error: error.message }
+
+        if (data.session && data.user) {
           set({
-            user: profile,
+            user: buildProfile(data.user),
             token: data.session.access_token,
             isAuthenticated: true,
             isLoading: false,
+            pendingVerification: null,
           })
         }
+        return {}
+      },
+
+      resendOtp: async (identifier, type) => {
+        const { error } = await supabase.auth.signInWithOtp({
+          [type]: identifier,
+          options: { shouldCreateUser: false },
+        } as any)
+        if (error) return { error: error.message }
         return {}
       },
 
@@ -103,17 +168,8 @@ export const useAuthStore = create<AuthState>()(
       initialize: async () => {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
-          const profile: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.name || '',
-            username: session.user.user_metadata?.username || '',
-            avatar: session.user.user_metadata?.avatar,
-            isPrivate: false,
-            createdAt: session.user.created_at,
-          }
           set({
-            user: profile,
+            user: buildProfile(session.user),
             token: session.access_token,
             isAuthenticated: true,
             isLoading: false,
@@ -124,20 +180,12 @@ export const useAuthStore = create<AuthState>()(
 
         supabase.auth.onAuthStateChange((_event, session) => {
           if (session?.user) {
-            const profile: User = {
-              id: session.user.id,
-              email: session.user.email || '',
-              name: session.user.user_metadata?.name || '',
-              username: session.user.user_metadata?.username || '',
-              avatar: session.user.user_metadata?.avatar,
-              isPrivate: false,
-              createdAt: session.user.created_at,
-            }
             set({
-              user: profile,
+              user: buildProfile(session.user),
               token: session.access_token,
               isAuthenticated: true,
               isLoading: false,
+              pendingVerification: null,
             })
           } else {
             set({ user: null, token: null, isAuthenticated: false, isLoading: false })
@@ -147,7 +195,12 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'smugflex-auth',
-      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+        pendingVerification: state.pendingVerification,
+      }),
     }
   )
 )

@@ -5,6 +5,7 @@ export interface ApiError { message: string; code?: string; errors?: Record<stri
 export interface User {
   id: string
   email: string
+  phone?: string
   name: string
   username: string
   avatar?: string
