@@ -2,7 +2,7 @@ import { Settings, Heart, MessageCircle, UserPlus, AtSign } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { useNotifications, useMarkNotificationRead, useMarkAllRead } from '@/hooks/use-notifications'
-import { useEffect } from 'react'
+import { Link } from 'react-router'
 
 const iconMap = {
   like: { icon: Heart, color: 'text-red-500', bg: 'bg-red-500/10' },
@@ -19,13 +19,25 @@ export default function NotificationsPage() {
 
   const notifications = data?.pages.flatMap((p) => p.notifications) || []
 
-  useEffect(() => {
-    notifications.forEach((n) => {
-      if (!n.is_read) {
-        markRead.mutate(n.id)
-      }
-    })
-  }, [notifications, markRead])
+  function getNotificationLink(notification: { type: string; from_user: { username: string }; post_id?: string }) {
+    switch (notification.type) {
+      case 'follow':
+        return `/profile/${notification.from_user.username}`
+      case 'message':
+        return '/messages'
+      case 'like':
+      case 'comment':
+      case 'mention':
+      default:
+        return '/home'
+    }
+  }
+
+  function handleClick(notification: { id: string; is_read: boolean }) {
+    if (!notification.is_read) {
+      markRead.mutate(notification.id)
+    }
+  }
 
   return (
     <div>
@@ -66,8 +78,10 @@ export default function NotificationsPage() {
             const config = iconMap[notification.type] || iconMap.like
             const Icon = config.icon
             return (
-              <div
+              <Link
                 key={notification.id}
+                to={getNotificationLink(notification)}
+                onClick={() => handleClick(notification)}
                 className={`flex items-start gap-3 px-4 py-3 transition-colors ${
                   !notification.is_read ? 'bg-accent/5' : ''
                 }`}
@@ -94,7 +108,7 @@ export default function NotificationsPage() {
                 {!notification.is_read && (
                   <div className="h-2 w-2 rounded-full bg-accent flex-shrink-0 mt-2" />
                 )}
-              </div>
+              </Link>
             )
           })}
           <div className="py-4">
