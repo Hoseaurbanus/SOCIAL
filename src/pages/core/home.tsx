@@ -6,7 +6,7 @@ import { Button } from '@/components/atoms/button'
 import { SkeletonPost } from '@/components/atoms/skeleton'
 import { ComposeModal } from '@/components/organisms/compose-modal'
 import { cn } from '@/lib/utils'
-import { useFeedPosts, useToggleLike, useToggleBookmark } from '@/hooks/use-posts'
+import { useFeedPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 
 const tabs = [
@@ -28,6 +28,9 @@ export default function HomePage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   const posts = data?.pages.flatMap((p) => p.posts) || []
+  const postIds = posts.map((p) => p.id)
+  const { data: likedMap } = useLikeStatus(postIds)
+  const { data: bookmarkedMap } = useBookmarkStatus(postIds)
 
   const handleLike = useCallback((postId: string) => {
     toggleLike.mutate(postId)
@@ -129,6 +132,8 @@ export default function HomePage() {
               timestamp={post.created_at}
               likes={post.likes_count}
               comments={post.comments_count}
+              liked={!!likedMap?.[post.id]}
+              saved={!!bookmarkedMap?.[post.id]}
               onLike={() => handleLike(post.id)}
               onComment={() => {}}
               onShare={() => {}}

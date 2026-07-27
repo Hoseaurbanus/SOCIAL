@@ -5,7 +5,7 @@ import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { PostCard } from '@/components/molecules/post-card'
 import { useProfile, useFollowCounts, useToggleFollow } from '@/hooks/use-profile'
-import { useUserPosts, useToggleLike, useToggleBookmark } from '@/hooks/use-posts'
+import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 
 export default function ProfilePage() {
@@ -20,6 +20,9 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('posts')
 
   const posts = postsData?.pages.flatMap((p) => p.posts) || []
+  const postIds = posts.map((p) => p.id)
+  const { data: likedMap } = useLikeStatus(postIds)
+  const { data: bookmarkedMap } = useBookmarkStatus(postIds)
   const isOwnProfile = currentUser?.username === username || (!username && currentUser?.username)
 
   if (profileLoading) {
@@ -165,6 +168,8 @@ export default function ProfilePage() {
                 timestamp={post.created_at}
                 likes={post.likes_count}
                 comments={post.comments_count}
+                liked={!!likedMap?.[post.id]}
+                saved={!!bookmarkedMap?.[post.id]}
                 onLike={() => toggleLike.mutate(post.id)}
                 onSave={() => toggleBookmark.mutate(post.id)}
               />
