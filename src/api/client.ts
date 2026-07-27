@@ -1,23 +1,38 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/config/axios'
-import type { ApiResponse } from '@/types/api'
+import { supabase } from '@/config/supabase'
 
-async function fetcher<T>(url: string): Promise<T> {
-  const { data } = await apiClient.get<ApiResponse<T>>(url)
-  return data.data
+export function useSupabaseQuery<T>(
+  key: string[],
+  queryFn: () => Promise<{ data: T | null; error: Error | null }>
+) {
+  return useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      const { data, error } = await queryFn()
+      if (error) throw error
+      return data as T
+    },
+  })
 }
 
-export function useApiQuery<T>(key: string[], url: string) {
-  return useQuery({ queryKey: key, queryFn: () => fetcher<T>(url) })
-}
-
-export function useApiMutation<T>(url: string, options?: { onSuccess?: () => void }) {
+export function useSupabaseMutation<TData, TVariables>(
+  mutationFn: (variables: TVariables) => Promise<{ data: TData | null; error: Error | null }>,
+  options?: { onSuccess?: () => void; invalidateKeys?: string[][] }
+) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: unknown) => apiClient.post<ApiResponse<T>>(url, payload).then(r => r.data.data),
+    mutationFn: async (variables: TVariables) => {
+      const { data, error } = await mutationFn(variables)
+      if (error) throw error
+      return data as TData
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries()
+      options?.invalidateKeys?.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: key })
+      })
       options?.onSuccess?.()
     },
   })
 }
+
+export { supabase }
