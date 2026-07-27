@@ -104,11 +104,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       verifyOtp: async (identifier, token, type) => {
-        const method = type === 'email' ? 'magiclink' : 'sms'
         const { data, error } = await supabase.auth.verifyOtp({
           [type]: identifier,
           token,
-          type: method,
+          type: type === 'email' ? 'email' : 'sms',
         } as any)
         if (error) return { error: error.message }
 
