@@ -1,0 +1,61 @@
+import { createBrowserRouter } from 'react-router'
+import { AuthLayout } from './components/templates/auth-layout'
+import { AppLayout } from './components/templates/app-layout'
+import { lazy, Suspense } from 'react'
+
+function SuspenseLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
+    </div>
+  )
+}
+
+const LoginPage = lazy(() => import('./pages/auth/login'))
+const SignupPage = lazy(() => import('./pages/auth/signup'))
+const WelcomePage = lazy(() => import('./pages/auth/welcome'))
+const ForgotPasswordPage = lazy(() => import('./pages/auth/forgot-password'))
+const VerifyEmailPage = lazy(() => import('./pages/auth/verify-email'))
+const OnboardingPage = lazy(() => import('./pages/auth/onboarding'))
+const HomePage = lazy(() => import('./pages/core/home'))
+const DiscoverPage = lazy(() => import('./pages/core/discover'))
+const MessagesPage = lazy(() => import('./pages/core/messages'))
+const NotificationsPage = lazy(() => import('./pages/core/notifications'))
+const ProfilePage = lazy(() => import('./pages/core/profile'))
+const SettingsPage = lazy(() => import('./pages/social/settings'))
+const PrivacyPage = lazy(() => import('./pages/social/privacy'))
+const SecurityPage = lazy(() => import('./pages/social/security'))
+const NotFoundPage = lazy(() => import('./pages/errors/not-found'))
+
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <AuthLayout />,
+    children: [
+      { index: true, element: <Suspense fallback={<SuspenseLoader />}><WelcomePage /></Suspense> },
+      { path: 'login', element: <Suspense fallback={<SuspenseLoader />}><LoginPage /></Suspense> },
+      { path: 'signup', element: <Suspense fallback={<SuspenseLoader />}><SignupPage /></Suspense> },
+      { path: 'forgot-password', element: <Suspense fallback={<SuspenseLoader />}><ForgotPasswordPage /></Suspense> },
+      { path: 'verify-email', element: <Suspense fallback={<SuspenseLoader />}><VerifyEmailPage /></Suspense> },
+    ],
+  },
+  {
+    path: '/onboarding',
+    element: <Suspense fallback={<SuspenseLoader />}><OnboardingPage /></Suspense>,
+  },
+  {
+    path: '/',
+    element: <AppLayout />,
+    children: [
+      { path: 'home', element: <Suspense fallback={<SuspenseLoader />}><HomePage /></Suspense> },
+      { path: 'discover', element: <Suspense fallback={<SuspenseLoader />}><DiscoverPage /></Suspense> },
+      { path: 'messages', element: <Suspense fallback={<SuspenseLoader />}><MessagesPage /></Suspense> },
+      { path: 'notifications', element: <Suspense fallback={<SuspenseLoader />}><NotificationsPage /></Suspense> },
+      { path: 'profile/:username?', element: <Suspense fallback={<SuspenseLoader />}><ProfilePage /></Suspense> },
+      { path: 'settings', element: <Suspense fallback={<SuspenseLoader />}><SettingsPage /></Suspense> },
+      { path: 'settings/privacy', element: <Suspense fallback={<SuspenseLoader />}><PrivacyPage /></Suspense> },
+      { path: 'settings/security', element: <Suspense fallback={<SuspenseLoader />}><SecurityPage /></Suspense> },
+    ],
+  },
+  { path: '*', element: <Suspense fallback={<SuspenseLoader />}><NotFoundPage /></Suspense> },
+])

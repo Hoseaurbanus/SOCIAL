@@ -1,7 +1,17 @@
+import { RouterProvider } from 'react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { router } from './router'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 5 * 60 * 1000, retry: 1 },
+  },
+})
+
 export default function App() {
   return (
-    <div className="min-h-screen bg-bg-secondary flex items-center justify-center">
-      <h1 className="text-2xl font-bold text-accent">SMUGFLEX</h1>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   )
 }
