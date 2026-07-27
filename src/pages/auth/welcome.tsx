@@ -1,7 +1,18 @@
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Button } from '@/components/atoms/button'
+import { useAuthStore } from '@/stores/auth-store'
+import { useEffect } from 'react'
 
 export default function WelcomePage() {
+  const navigate = useNavigate()
+  const { isAuthenticated, isLoading } = useAuthStore()
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/home', { replace: true })
+    }
+  }, [isAuthenticated, isLoading, navigate])
+
   return (
     <div className="text-center space-y-8">
       <div className="flex justify-center">

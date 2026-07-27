@@ -2,10 +2,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router'
-import { Mail, Lock } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { useAuthStore } from '@/stores/auth-store'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -26,10 +26,17 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { login, loginWithGoogle } = useAuthStore()
+  const { login, loginWithGoogle, isAuthenticated, isLoading } = useAuthStore()
   const [error, setError] = useState<string | null>(null)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/home', { replace: true })
+    }
+  }, [isAuthenticated, isLoading, navigate])
 
   const onSubmit = async (data: LoginForm) => {
     setError(null)
@@ -72,7 +79,7 @@ export default function LoginPage() {
           <label htmlFor="login-email" className="block text-sm font-medium text-text-primary mb-1">Email</label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
-            <input id="login-email" type="email" placeholder="you@example.com" className="w-full h-10 pl-10 pr-4 rounded-lg border border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors" {...register('email')} aria-describedby={errors.email ? 'login-email-error' : undefined} />
+            <input id="login-email" type="email" placeholder="you@example.com" className="w-full h-10 pl-10 pr-4 rounded-lg border border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors" {...register('email')} autoComplete="email" aria-describedby={errors.email ? 'login-email-error' : undefined} />
           </div>
           {errors.email && <p id="login-email-error" className="mt-1 text-sm text-error">{errors.email.message}</p>}
         </div>
@@ -80,7 +87,10 @@ export default function LoginPage() {
           <label htmlFor="login-password" className="block text-sm font-medium text-text-primary mb-1">Password</label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
-            <input id="login-password" type="password" placeholder="Enter your password" className="w-full h-10 pl-10 pr-4 rounded-lg border border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors" {...register('password')} aria-describedby={errors.password ? 'login-password-error' : undefined} />
+            <input id="login-password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" className="w-full h-10 pl-10 pr-10 rounded-lg border border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors" {...register('password')} autoComplete="current-password" aria-describedby={errors.password ? 'login-password-error' : undefined} />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
           {errors.password && <p id="login-password-error" className="mt-1 text-sm text-error">{errors.password.message}</p>}
         </div>

@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
           <label htmlFor="reset-email" className="block text-sm font-medium text-text-primary mb-1">Email</label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
-            <input id="reset-email" type="email" placeholder="you@example.com" className="w-full h-10 pl-10 pr-4 rounded-lg border border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors" {...register('email')} aria-describedby={errors.email ? 'reset-email-error' : undefined} />
+            <input id="reset-email" type="email" placeholder="you@example.com" className="w-full h-12 pl-10 pr-4 rounded-lg border border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors" {...register('email')} aria-describedby={errors.email ? 'reset-email-error' : undefined} />
           </div>
           {errors.email && <p id="reset-email-error" className="mt-1 text-sm text-error">{errors.email.message}</p>}
         </div>
