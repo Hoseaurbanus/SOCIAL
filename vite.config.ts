@@ -15,7 +15,7 @@ export default defineConfig({
         name: 'SMUGFLEX',
         short_name: 'SMUGFLEX',
         description: 'Where communities thrive and ideas connect',
-        theme_color: '#F59E0B',
+        theme_color: '#3B82F6',
         background_color: '#0A0A0B',
         display: 'standalone',
         icons: [
