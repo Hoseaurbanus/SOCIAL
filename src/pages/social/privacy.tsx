@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
+import { useProfile, useUpdateProfile } from '@/hooks/use-profile'
+import { useAuthStore } from '@/stores/auth-store'
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -24,9 +26,44 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 export default function PrivacyPage() {
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  const { data: profile } = useProfile(user?.username || '')
+  const updateProfile = useUpdateProfile()
+
   const [privateAccount, setPrivateAccount] = useState(false)
   const [showActivity, setShowActivity] = useState(true)
   const [allowMentions, setAllowMentions] = useState(true)
+
+  useEffect(() => {
+    if (profile) {
+      setPrivateAccount(profile.is_private ?? false)
+    }
+  }, [profile])
+
+  useEffect(() => {
+    const savedActivity = localStorage.getItem('show_activity')
+    const savedMentions = localStorage.getItem('allow_mentions')
+    if (savedActivity !== null) setShowActivity(savedActivity === 'true')
+    if (savedMentions !== null) setAllowMentions(savedMentions === 'true')
+  }, [])
+
+  const handleTogglePrivate = () => {
+    const newValue = !privateAccount
+    setPrivateAccount(newValue)
+    updateProfile.mutate({ is_private: newValue })
+  }
+
+  const handleToggleActivity = () => {
+    const newValue = !showActivity
+    setShowActivity(newValue)
+    localStorage.setItem('show_activity', String(newValue))
+  }
+
+  const handleToggleMentions = () => {
+    const newValue = !allowMentions
+    setAllowMentions(newValue)
+    localStorage.setItem('allow_mentions', String(newValue))
+  }
 
   return (
     <div className="max-w-[600px] mx-auto">
@@ -44,7 +81,7 @@ export default function PrivacyPage() {
               <div className="text-text-primary font-medium">Private Account</div>
               <div className="text-sm text-text-secondary">Only followers can see your posts</div>
             </div>
-            <Toggle checked={privateAccount} onChange={setPrivateAccount} />
+            <Toggle checked={privateAccount} onChange={handleTogglePrivate} />
           </div>
         </div>
         <div className="px-4 py-4">
@@ -53,7 +90,7 @@ export default function PrivacyPage() {
               <div className="text-text-primary font-medium">Show Activity Status</div>
               <div className="text-sm text-text-secondary">Let others see when you are active</div>
             </div>
-            <Toggle checked={showActivity} onChange={setShowActivity} />
+            <Toggle checked={showActivity} onChange={handleToggleActivity} />
           </div>
         </div>
         <div className="px-4 py-4">
@@ -62,7 +99,7 @@ export default function PrivacyPage() {
               <div className="text-text-primary font-medium">Allow Mentions</div>
               <div className="text-sm text-text-secondary">Let people mention you in comments</div>
             </div>
-            <Toggle checked={allowMentions} onChange={setAllowMentions} />
+            <Toggle checked={allowMentions} onChange={handleToggleMentions} />
           </div>
         </div>
       </div>
