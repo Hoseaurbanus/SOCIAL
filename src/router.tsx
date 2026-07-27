@@ -17,6 +17,7 @@ const SignupPage = lazy(() => import('./pages/auth/signup'))
 const WelcomePage = lazy(() => import('./pages/auth/welcome'))
 const ForgotPasswordPage = lazy(() => import('./pages/auth/forgot-password'))
 const VerifyPage = lazy(() => import('./pages/auth/verify'))
+const CreatePasswordPage = lazy(() => import('./pages/auth/create-password'))
 const OnboardingPage = lazy(() => import('./pages/auth/onboarding'))
 const HomePage = lazy(() => import('./pages/core/home'))
 const DiscoverPage = lazy(() => import('./pages/core/discover'))
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
       { path: 'signup', element: <Suspense fallback={<SuspenseLoader />}><SignupPage /></Suspense> },
       { path: 'forgot-password', element: <Suspense fallback={<SuspenseLoader />}><ForgotPasswordPage /></Suspense> },
       { path: 'verify', element: <Suspense fallback={<SuspenseLoader />}><VerifyPage /></Suspense> },
+      { path: 'create-password', element: <Suspense fallback={<SuspenseLoader />}><CreatePasswordPage /></Suspense> },
     ],
   },
   {

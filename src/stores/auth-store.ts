@@ -12,8 +12,8 @@ interface AuthState {
   pendingVerification: { identifier: string; type: 'email' | 'phone' } | null
   setSession: (session: Session | null, profile?: User | null) => void
   login: (email: string, password: string) => Promise<{ error?: string }>
-  signup: (email: string, password: string, name: string) => Promise<{ error?: string; needsVerification?: boolean }>
-  signupWithPhone: (phone: string, password: string, name: string) => Promise<{ error?: string; needsVerification?: boolean }>
+  signup: (email: string, name: string) => Promise<{ error?: string; needsVerification?: boolean }>
+  signupWithPhone: (phone: string, name: string) => Promise<{ error?: string; needsVerification?: boolean }>
   verifyOtp: (identifier: string, token: string, type: 'email' | 'phone') => Promise<{ error?: string }>
   resendOtp: (identifier: string, type: 'email' | 'phone') => Promise<{ error?: string }>
   loginWithGoogle: () => Promise<{ error?: string }>
@@ -73,66 +73,34 @@ export const useAuthStore = create<AuthState>()(
         return {}
       },
 
-      signup: async (email, password, name) => {
-        const { data, error } = await supabase.auth.signUp({
+      signup: async (email, name) => {
+        const { error } = await supabase.auth.signInWithOtp({
           email,
-          password,
           options: {
             data: { name, username: name.toLowerCase().replace(/\s+/g, '') },
           },
         })
         if (error) return { error: error.message }
 
-        if (data.user) {
-          const emailConfirmed = data.user.email_confirmed_at != null
-          if (emailConfirmed && data.session) {
-            set({
-              user: buildProfile(data.user),
-              token: data.session.access_token,
-              isAuthenticated: true,
-              isLoading: false,
-            })
-            return {}
-          }
-
-          // Send OTP email after signup
-          await supabase.auth.signInWithOtp({ email })
-
-          set({ pendingVerification: { identifier: email, type: 'email' } })
-          return { needsVerification: true }
-        }
-        return {}
+        set({ pendingVerification: { identifier: email, type: 'email' } })
+        return { needsVerification: true }
       },
 
-      signupWithPhone: async (phone, password, name) => {
-        const { data, error } = await supabase.auth.signUp({
+      signupWithPhone: async (phone, name) => {
+        const { error } = await supabase.auth.signInWithOtp({
           phone,
-          password,
           options: {
             data: { name, username: name.toLowerCase().replace(/\s+/g, '') },
           },
         })
         if (error) return { error: error.message }
 
-        if (data.user) {
-          const phoneConfirmed = data.user.phone_confirmed_at != null
-          if (phoneConfirmed && data.session) {
-            set({
-              user: buildProfile(data.user),
-              token: data.session.access_token,
-              isAuthenticated: true,
-              isLoading: false,
-            })
-            return {}
-          }
-          set({ pendingVerification: { identifier: phone, type: 'phone' } })
-          return { needsVerification: true }
-        }
-        return {}
+        set({ pendingVerification: { identifier: phone, type: 'phone' } })
+        return { needsVerification: true }
       },
 
       verifyOtp: async (identifier, token, type) => {
-        const method = type === 'email' ? 'signup' : 'sms'
+        const method = type === 'email' ? 'magiclink' : 'sms'
         const { data, error } = await supabase.auth.verifyOtp({
           [type]: identifier,
           token,

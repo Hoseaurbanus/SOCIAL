@@ -79,7 +79,8 @@ export default function VerifyPage() {
       setCode(['', '', '', '', '', ''])
       inputRefs.current[0]?.focus()
     } else {
-      navigate('/onboarding')
+      // After verification, go to create password page
+      navigate('/create-password')
     }
   }, [code, identifier, type, verifyOtp, navigate])
 
@@ -158,6 +159,10 @@ export default function VerifyPage() {
         ))}
       </div>
 
+      <p className="text-sm text-text-secondary text-center">
+        After verification, you'll create your password
+      </p>
+
       <Button
         fullWidth
         size="lg"
@@ -165,7 +170,7 @@ export default function VerifyPage() {
         onClick={handleVerify}
         disabled={code.some((c) => !c)}
       >
-        Verify
+        Verify & Continue
       </Button>
 
       <div className="text-center">
