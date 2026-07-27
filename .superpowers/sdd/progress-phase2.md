@@ -5,7 +5,7 @@
 - [x] Task 2: Add image upload to compose modal (commit clean, review clean)
 - [x] Task 3: Add new conversation creation (commit clean, review clean)
 - [x] Task 4: Add tab filtering to Home page (commit ada04ae, review clean)
-- [ ] Task 5: Persist privacy and security settings
+- [x] Task 5: Persist privacy and security settings (commit clean, review clean)
 - [ ] Task 6: Add error boundaries
 - [ ] Task 7: Fix auth page consistency
 - [ ] Task 8: Add post delete and more options
