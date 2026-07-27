@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router'
+import { useState } from 'react'
 import { ChevronLeft, ChevronRight, User, Shield, Lock, Bell, Sparkles, Palette, HelpCircle, LogOut } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -7,11 +8,12 @@ interface SettingsItemProps {
   label: string
   description: string
   onClick?: () => void
+  disabled?: boolean
 }
 
-function SettingsItem({ icon, label, description, onClick }: SettingsItemProps) {
+function SettingsItem({ icon, label, description, onClick, disabled }: SettingsItemProps) {
   return (
-    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-bg-tertiary transition-colors text-left border-b border-border">
+    <button onClick={onClick} disabled={disabled} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-bg-tertiary transition-colors text-left border-b border-border disabled:opacity-50 disabled:cursor-not-allowed">
       <div className="text-text-secondary">{icon}</div>
       <div className="flex-1">
         <div className="text-text-primary">{label}</div>
@@ -25,8 +27,10 @@ function SettingsItem({ icon, label, description, onClick }: SettingsItemProps) 
 export default function SettingsPage() {
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   const handleLogout = async () => {
+    setLoggingOut(true)
     await logout()
     navigate('/login')
   }
@@ -67,7 +71,7 @@ export default function SettingsPage() {
           <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider">Support</h3>
         </div>
         <SettingsItem icon={<HelpCircle className="h-5 w-5" />} label="Help & Support" description="FAQ, contact us" onClick={() => {}} />
-        <SettingsItem icon={<LogOut className="h-5 w-5" />} label="Log Out" description="Sign out of your account" onClick={handleLogout} />
+        <SettingsItem icon={<LogOut className="h-5 w-5" />} label="Log Out" description="Sign out of your account" onClick={handleLogout} disabled={loggingOut} />
       </div>
     </div>
   )
