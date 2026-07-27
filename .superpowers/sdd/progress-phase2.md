@@ -7,5 +7,5 @@
 - [x] Task 4: Add tab filtering to Home page (commit ada04ae, review clean)
 - [x] Task 5: Persist privacy and security settings (commit clean, review clean)
 - [x] Task 6: Add error boundaries (commit 18cbb82, review clean)
-- [ ] Task 7: Fix auth page consistency
+- [x] Task 7: Fix auth page consistency (commit clean, review clean)
 - [ ] Task 8: Add post delete and more options

@@ -5,7 +5,7 @@ import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { PostCard } from '@/components/molecules/post-card'
 import { useProfile, useFollowCounts, useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
-import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus } from '@/hooks/use-posts'
+import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 
 export default function ProfilePage() {
@@ -19,6 +19,7 @@ export default function ProfilePage() {
   const { data: postsData, isLoading: postsLoading, error: postsError } = useUserPosts(profile?.id || '')
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
+  const deletePostMutation = useDeletePost()
   const [activeTab, setActiveTab] = useState('posts')
 
   const posts = postsData?.pages.flatMap((p) => p.posts) || []
@@ -172,6 +173,7 @@ export default function ProfilePage() {
               <PostCard
                 key={post.id}
                 postId={post.id}
+                isOwnPost={isOwnProfile}
                 author={post.user}
                 content={post.content}
                 images={post.images}
@@ -182,6 +184,7 @@ export default function ProfilePage() {
                 saved={!!bookmarkedMap?.[post.id]}
                 onLike={() => toggleLike.mutate(post.id)}
                 onSave={() => toggleBookmark.mutate(post.id)}
+                onDelete={() => deletePostMutation.mutate(post.id)}
               />
             ))
           )

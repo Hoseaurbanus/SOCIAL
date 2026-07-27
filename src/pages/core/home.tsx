@@ -6,7 +6,7 @@ import { Button } from '@/components/atoms/button'
 import { SkeletonPost } from '@/components/atoms/skeleton'
 import { ComposeModal } from '@/components/organisms/compose-modal'
 import { cn } from '@/lib/utils'
-import { useFeedPosts, useFollowingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus } from '@/hooks/use-posts'
+import { useFeedPosts, useFollowingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 
 const tabs = [
@@ -28,6 +28,7 @@ export default function HomePage() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeQuery
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
+  const deletePostMutation = useDeletePost()
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
@@ -136,6 +137,7 @@ export default function HomePage() {
             <PostCard
               key={post.id}
               postId={post.id}
+              isOwnPost={post.user_id === user?.id}
               author={post.user}
               content={post.content}
               images={post.images}
@@ -148,6 +150,7 @@ export default function HomePage() {
               onComment={() => {}}
               onShare={() => {}}
               onSave={() => handleBookmark(post.id)}
+              onDelete={() => deletePostMutation.mutate(post.id)}
             />
           ))}
           <div ref={loadMoreRef} className="py-4">

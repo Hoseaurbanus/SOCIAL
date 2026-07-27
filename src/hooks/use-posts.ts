@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment } from '@/api/posts'
+import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, deletePost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment } from '@/api/posts'
 
 export function useFeedPosts() {
   return useInfiniteQuery({
@@ -98,5 +98,15 @@ export function useBookmarkStatus(postIds: string[]) {
     queryKey: ['bookmarks', postIds],
     queryFn: () => checkBookmarkStatus(postIds),
     enabled: postIds.length > 0,
+  })
+}
+
+export function useDeletePost() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deletePost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
+    },
   })
 }

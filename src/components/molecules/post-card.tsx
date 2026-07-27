@@ -8,14 +8,17 @@ import { usePostComments, useAddComment } from '@/hooks/use-posts'
 
 interface PostCardProps {
   postId?: string
+  isOwnPost?: boolean
   author: { name: string; username: string; avatar?: string }
   community?: string; content: string; images?: string[]; timestamp: string
   likes: number; comments: number; liked?: boolean; saved?: boolean
   onLike?: () => void; onComment?: () => void; onShare?: () => void; onSave?: () => void
+  onDelete?: () => void
 }
 
-export function PostCard({ postId, author, community, content, images, timestamp, likes, comments, liked = false, saved = false, onLike, onComment, onShare, onSave }: PostCardProps) {
+export function PostCard({ postId, isOwnPost, author, community, content, images, timestamp, likes, comments, liked = false, saved = false, onLike, onComment, onShare, onSave, onDelete }: PostCardProps) {
   const [showComments, setShowComments] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
   const [commentText, setCommentText] = useState('')
   const { data: postComments = [], isLoading: commentsLoading } = usePostComments(postId || '')
   const addCommentMutation = useAddComment()
@@ -49,7 +52,34 @@ export function PostCard({ postId, author, community, content, images, timestamp
               </div>
             </div>
           </div>
-          <button className="p-1 rounded-full hover:bg-bg-tertiary text-text-secondary" aria-label="More options"><MoreHorizontal className="h-5 w-5" /></button>
+          <div className="relative">
+            <button onClick={() => setShowMenu(!showMenu)} className="p-1 rounded-full hover:bg-bg-tertiary text-text-secondary" aria-label="More options">
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 top-full mt-1 z-20 w-40 bg-bg-primary border border-border rounded-lg shadow-lg py-1">
+                  {isOwnPost && (
+                    <button
+                      onClick={() => { setShowMenu(false); onDelete?.() }}
+                      className="w-full text-left px-4 py-2 text-sm text-error hover:bg-bg-tertiary transition-colors"
+                    >
+                      Delete post
+                    </button>
+                  )}
+                  {!isOwnPost && (
+                    <button
+                      onClick={() => setShowMenu(false)}
+                      className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary transition-colors"
+                    >
+                      Report post
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <p className="text-text-primary whitespace-pre-wrap">{content}</p>
         {images && images.length > 0 && (
