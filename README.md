@@ -1,32 +1,87 @@
-# React + TypeScript + Vite
+# SMUGFLEX
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A free social platform where communities thrive and ideas connect. No ads, no subscriptions.
 
-Currently, two official plugins are available:
+**Live:** [smugflex.com](https://smugflex.com)  
+**Docs:** [docs.smugflex.com](https://docs.smugflex.com)  
+**Terms:** [smugflex.com/legal/terms-of-service](https://smugflex.com/legal/terms-of-service)  
+**Privacy:** [smugflex.com/legal/privacy-policy](https://smugflex.com/legal/privacy-policy)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech Stack
 
-## React Compiler
+- **React 19** + TypeScript
+- **Vite** (build, dev, HMR)
+- **Tailwind CSS v4** (design tokens, dark/light themes)
+- **React Router v7** (file-based routing with lazy loading)
+- **TanStack Query v5** (server state management)
+- **Zustand** (client state management)
+- **React Hook Form + Zod** (form validation)
+- **Framer Motion** (animations)
+- **Lucide React** (icons)
+- **Capacitor** (mobile builds)
+- **Vite PWA** (service worker, offline support)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting Started
 
-## Expanding the Oxlint configuration
+```bash
+# Install dependencies
+npm install
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+# Start dev server (http://localhost:3000)
+npm run dev
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+# Production build
+npm run build
+
+# Run tests
+npm test
+
+# Lint
+npm run lint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Project Structure
+
+```
+src/
+├── api/            # React Query hooks, Axios interceptors
+├── assets/         # Static assets
+├── components/
+│   ├── atoms/      # Button, Input, Avatar, Badge, Skeleton
+│   ├── molecules/  # Card, PostCard, Stories
+│   ├── organisms/  # Header, BottomNav
+│   └── templates/  # AppLayout, AuthLayout
+├── config/         # Axios instance
+├── hooks/          # useTheme
+├── lib/            # Utilities (cn)
+├── pages/
+│   ├── auth/       # Welcome, Login, Signup, ForgotPassword, VerifyEmail, Onboarding
+│   ├── core/       # Home, Discover, Messages, Notifications, Profile
+│   ├── errors/     # NotFound
+│   └── social/     # Settings, Privacy, Security
+├── stores/         # Zustand (auth, ui)
+├── types/          # API types
+├── App.tsx
+├── index.css       # Tailwind + design tokens
+├── main.tsx
+└── router.tsx
+```
+
+## Design System
+
+- **Font:** Inter (variable weight 100-900)
+- **Grid:** 8-point system (4px half-unit)
+- **Accent:** Blue (#3B82F6)
+- **Themes:** Light / Dark / System (via `prefers-color-scheme`)
+- **Breakpoints:** sm 640px, md 1024px, lg 1440px
+
+## Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server on port 3000 |
+| `npm run build` | TypeScript compile + Vite production build |
+| `npm run preview` | Preview production build locally |
+| `npm test` | Run Vitest tests |
+| `npm run test:watch` | Run Vitest in watch mode |
+| `npm run lint` | Run Oxlint (type-aware rules enabled) |
