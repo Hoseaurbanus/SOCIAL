@@ -1,10 +1,21 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchFeedPosts, fetchPostsByUser, createPost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment } from '@/api/posts'
+import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment } from '@/api/posts'
 
 export function useFeedPosts() {
   return useInfiniteQuery({
     queryKey: ['posts', 'feed'],
     queryFn: ({ pageParam = 1 }) => fetchFeedPosts(pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
+    },
+    initialPageParam: 1,
+  })
+}
+
+export function useFollowingPosts() {
+  return useInfiniteQuery({
+    queryKey: ['posts', 'following'],
+    queryFn: ({ pageParam = 1 }) => fetchFollowingPosts(pageParam),
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
     },

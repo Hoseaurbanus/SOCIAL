@@ -6,7 +6,7 @@ import { Button } from '@/components/atoms/button'
 import { SkeletonPost } from '@/components/atoms/skeleton'
 import { ComposeModal } from '@/components/organisms/compose-modal'
 import { cn } from '@/lib/utils'
-import { useFeedPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus } from '@/hooks/use-posts'
+import { useFeedPosts, useFollowingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 
 const tabs = [
@@ -21,7 +21,11 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState('for-you')
   const [showCompose, setShowCompose] = useState(false)
   const user = useAuthStore((s) => s.user)
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useFeedPosts()
+  const feedQuery = useFeedPosts()
+  const followingQuery = useFollowingPosts()
+
+  const activeQuery = activeTab === 'following' ? followingQuery : feedQuery
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeQuery
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -103,7 +107,12 @@ export default function HomePage() {
       </div>
 
       {/* Feed */}
-      {isLoading ? (
+      {activeTab === 'communities' ? (
+        <div className="p-8 text-center">
+          <p className="text-text-secondary mb-2">No communities yet</p>
+          <p className="text-text-tertiary text-sm">Communities are coming soon.</p>
+        </div>
+      ) : isLoading ? (
         <div className="divide-y divide-border">
           {[1, 2, 3].map((i) => (
             <SkeletonPost key={i} />

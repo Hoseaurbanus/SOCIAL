@@ -30,6 +30,32 @@ export async function fetchPostsByUser(userId: string, page = 1, pageSize = 20) 
   return { posts: (data || []) as Post[], total: count || 0 }
 }
 
+export async function fetchFollowingPosts(page = 1, pageSize = 20) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data: follows } = await supabase
+    .from('follows')
+    .select('following_id')
+    .eq('follower_id', user.id)
+
+  const followingIds = follows?.map((f) => f.following_id) || []
+  if (followingIds.length === 0) return { posts: [], total: 0 }
+
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
+    .from('posts')
+    .select('*, user:profiles(id, name, username, avatar)', { count: 'exact' })
+    .in('user_id', followingIds)
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) throw error
+  return { posts: (data || []) as Post[], total: count || 0 }
+}
+
 export async function createPost(content: string, images?: string[]) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
