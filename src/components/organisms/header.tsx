@@ -1,11 +1,9 @@
 import { Link } from 'react-router'
 import { Search, Bell, MessageCircle } from 'lucide-react'
+import { useUnreadCount } from '@/hooks/use-notifications'
 
-interface HeaderProps {
-  notificationCount?: number
-}
-
-export function Header({ notificationCount = 0 }: HeaderProps) {
+export function Header() {
+  const { data: notificationCount = 0 } = useUnreadCount()
   return (
     <header className="sticky top-0 z-header bg-bg-primary border-b border-border">
       <div className="flex items-center justify-between h-16 px-4 max-w-[1200px] mx-auto">
