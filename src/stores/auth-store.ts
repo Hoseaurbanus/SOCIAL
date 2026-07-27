@@ -94,6 +94,10 @@ export const useAuthStore = create<AuthState>()(
             })
             return {}
           }
+
+          // Send OTP email after signup
+          await supabase.auth.signInWithOtp({ email })
+
           set({ pendingVerification: { identifier: email, type: 'email' } })
           return { needsVerification: true }
         }
@@ -151,7 +155,6 @@ export const useAuthStore = create<AuthState>()(
       resendOtp: async (identifier, type) => {
         const { error } = await supabase.auth.signInWithOtp({
           [type]: identifier,
-          options: { shouldCreateUser: false },
         } as any)
         if (error) return { error: error.message }
         return {}
