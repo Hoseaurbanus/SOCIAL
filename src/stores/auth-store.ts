@@ -16,6 +16,7 @@ interface AuthState {
   signupWithPhone: (phone: string, password: string, name: string) => Promise<{ error?: string; needsVerification?: boolean }>
   verifyOtp: (identifier: string, token: string, type: 'email' | 'phone') => Promise<{ error?: string }>
   resendOtp: (identifier: string, type: 'email' | 'phone') => Promise<{ error?: string }>
+  loginWithGoogle: () => Promise<{ error?: string }>
   logout: () => Promise<void>
   updateUser: (userData: Partial<User>) => void
   initialize: () => Promise<void>
@@ -152,6 +153,17 @@ export const useAuthStore = create<AuthState>()(
           [type]: identifier,
           options: { shouldCreateUser: false },
         } as any)
+        if (error) return { error: error.message }
+        return {}
+      },
+
+      loginWithGoogle: async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/home`,
+          },
+        })
         if (error) return { error: error.message }
         return {}
       },
