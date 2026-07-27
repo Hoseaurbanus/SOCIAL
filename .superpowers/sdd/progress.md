@@ -2,7 +2,7 @@
 
 ## Tasks
 - [x] Task 1: Fix OTP vs Magic Link mismatch (commits 124becb, review clean)
-- [ ] Task 2: Fix forgot password flow
+- [x] Task 2: Fix forgot password flow (commits dc1ad83+1bc2ad1, review clean)
 - [ ] Task 3: Fix setTimeout memory leaks
 - [ ] Task 4: Delete dead code (verify-email.tsx)
 - [ ] Task 5: Wire liked/saved state to PostCard

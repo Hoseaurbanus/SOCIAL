@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router'
 import { Mail, User, Phone, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { useAuthStore } from '@/stores/auth-store'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const step1Schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -40,6 +40,13 @@ export default function SignupPage() {
     setStep(2)
   }
 
+  useEffect(() => {
+    if (step === 3) {
+      const timer = setTimeout(() => navigate('/verify'), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [step, navigate])
+
   const onStep2Email = async (data: Step2EmailForm) => {
     setError(null)
     const result = await signup(data.email, name)
@@ -47,7 +54,6 @@ export default function SignupPage() {
       setError(result.error)
     } else {
       setStep(3)
-      setTimeout(() => navigate('/verify'), 2000)
     }
   }
 
@@ -58,7 +64,6 @@ export default function SignupPage() {
       setError(result.error)
     } else {
       setStep(3)
-      setTimeout(() => navigate('/verify'), 2000)
     }
   }
 

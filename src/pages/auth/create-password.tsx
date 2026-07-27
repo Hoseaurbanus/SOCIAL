@@ -40,6 +40,13 @@ export default function CreatePasswordPage() {
     checkSession()
   }, [])
 
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => navigate('/home'), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [success, navigate])
+
   const onSubmit = async (data: PasswordForm) => {
     setError(null)
     const { error: updateError } = await supabase.auth.updateUser({
@@ -49,7 +56,6 @@ export default function CreatePasswordPage() {
       setError(updateError.message)
     } else {
       setSuccess(true)
-      setTimeout(() => navigate('/home'), 2000)
     }
   }
 
