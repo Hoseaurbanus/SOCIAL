@@ -86,11 +86,9 @@ export default function ProfilePage() {
           <h1 className="text-lg font-bold text-text-primary">{profile.name}</h1>
           <p className="text-sm text-text-tertiary">{posts.length} posts</p>
         </div>
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/settings">
-            <Settings className="h-5 w-5" />
-          </Link>
-        </Button>
+        <Link to="/settings" className="inline-flex items-center justify-center gap-2 h-8 px-3 text-sm font-medium rounded-md text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-colors">
+          <Settings className="h-5 w-5" />
+        </Link>
       </div>
 
       {/* Profile Info */}
