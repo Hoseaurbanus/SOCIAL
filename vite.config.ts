@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'S.S — Digital Ecosystem',
-        short_name: 'S.S',
-        description: 'The world\'s most trusted, secure, and user-friendly digital ecosystem',
+        name: 'SMUGFLEX — Digital Ecosystem',
+        short_name: 'SMUGFLEX',
+        description: 'SMUGFLEX — the world\'s most trusted, secure, and user-friendly digital ecosystem',
         theme_color: '#0D9488',
         background_color: '#0A0A0B',
         display: 'standalone',

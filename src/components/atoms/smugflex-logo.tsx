@@ -18,37 +18,52 @@ function LogoIcon({ size }: { size: number }) {
     <svg
       width={size}
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id="smugflex-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="smugflex-grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#0D9488" />
-          <stop offset="50%" stopColor="#0F766E" />
+          <stop offset="40%" stopColor="#0F766E" />
           <stop offset="100%" stopColor="#115E59" />
         </linearGradient>
         <linearGradient id="smugflex-accent" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#5EEAD4" />
           <stop offset="100%" stopColor="#2DD4BF" />
         </linearGradient>
+        <linearGradient id="smugflex-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#F59E0B" />
+          <stop offset="100%" stopColor="#D97706" />
+        </linearGradient>
       </defs>
+
+      {/* Outer rounded square — modern app icon shape */}
+      <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#smugflex-grad)" />
+
+      {/* Abstract S+F monogram — geometric, modern, bold */}
+      {/* S shape — top left to bottom right flow */}
       <path
-        d="M12 8C12 8 8 12 8 18C8 24 14 26 18 28C22 30 28 32 28 38C28 44 22 44 18 44"
-        stroke="url(#smugflex-gradient)"
-        strokeWidth="5"
+        d="M20 18 C20 14 24 12 28 12 L36 12 C40 12 42 14 42 17 C42 20 38 22 34 24 L28 26 C24 28 22 30 22 33 C22 36 24 38 28 38 L36 38 C40 38 42 40 42 44"
+        stroke="white"
+        strokeWidth="4.5"
         strokeLinecap="round"
         fill="none"
+        opacity="0.95"
       />
+
+      {/* F crossbar — subtle accent element */}
       <path
-        d="M36 40C36 40 40 36 40 30C40 24 34 22 30 20C26 18 20 16 20 10C20 4 26 4 30 4"
-        stroke="url(#smugflex-accent)"
-        strokeWidth="5"
+        d="M44 24 L50 24"
+        stroke="url(#smugflex-gold)"
+        strokeWidth="3.5"
         strokeLinecap="round"
-        fill="none"
+        opacity="0.9"
       />
-      <circle cx="24" cy="24" r="3" fill="url(#smugflex-gradient)" />
+
+      {/* Accent dot — brand mark */}
+      <circle cx="50" cy="18" r="3" fill="url(#smugflex-gold)" opacity="0.9" />
     </svg>
   )
 }
@@ -64,13 +79,13 @@ export function SmugflexLogo({ size = 'md', variant = 'full', className }: Smugf
     <div className={cn('flex items-center', s.gap, className)}>
       <LogoIcon size={s.icon} />
       {variant === 'full' && (
-        <span className={cn('font-bold tracking-tight text-text-primary', s.text)}>
-          S<span className="text-accent">.S</span>
+        <span className={cn('font-black tracking-tight text-text-primary', s.text)}>
+          SMUG<span className="text-accent">FLEX</span>
         </span>
       )}
       {variant === 'wordmark' && (
-        <span className={cn('font-bold tracking-tight text-text-primary', s.text)}>
-          S.S
+        <span className={cn('font-black tracking-tight text-text-primary', s.text)}>
+          SMUGFLEX
         </span>
       )}
     </div>

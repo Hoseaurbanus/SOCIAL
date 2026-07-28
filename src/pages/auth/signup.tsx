@@ -82,7 +82,7 @@ export default function SignupPage() {
         <div className="relative z-10 text-center lg:text-left max-w-md">
           <div className="hidden lg:block">
             <h1 className="text-4xl font-bold text-white mb-4">
-              Join <span className="text-secondary">S.S</span>
+              Join <span className="text-secondary">SMUGFLEX</span>
             </h1>
             <p className="text-lg text-white/80 mb-8">
               Create your account and start connecting with communities that matter.
@@ -155,7 +155,7 @@ export default function SignupPage() {
               {step === 3 && "Check your inbox!"}
             </h2>
             <p className="text-text-secondary">
-              {step === 1 && "This is how others will see you on S.S"}
+              {step === 1 && "This is how others will see you on SMUGFLEX"}
               {step === 2 && "We'll send you a verification link — no password needed yet"}
               {step === 3 && "We've sent you a link to verify and create your password"}
             </p>
