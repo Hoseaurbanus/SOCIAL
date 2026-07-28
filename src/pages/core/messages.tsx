@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { Search, Settings, Edit } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
-import { useConversations } from '@/hooks/use-messages'
+import { useConversations, useRealtimeConversations } from '@/hooks/use-messages'
 import { UserSearchModal } from '@/components/organisms/user-search-modal'
 import { useState } from 'react'
 import { timeAgo } from '@/lib/timeago'
@@ -11,6 +11,8 @@ export default function MessagesPage() {
   const { data: conversations, isLoading, error } = useConversations()
   const [search, setSearch] = useState('')
   const [showNewMessage, setShowNewMessage] = useState(false)
+
+  useRealtimeConversations()
 
   const filtered = conversations?.filter((c) =>
     c.participants.some((p) =>

@@ -1,26 +1,38 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router'
 import { ChevronLeft, Send } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
-import { useMessages, useSendMessage, useMarkAsRead } from '@/hooks/use-messages'
+import { useMessages, useSendMessage, useMarkAsRead, useRealtimeMessages } from '@/hooks/use-messages'
 import { useAuthStore } from '@/stores/auth-store'
-import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/config/supabase'
+import type { Message } from '@/types/api'
 
 export default function ConversationPage() {
   const { conversationId } = useParams<{ conversationId: string }>()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
-  const { data: messages = [], isLoading: messagesLoading, error: messagesError } = useMessages(conversationId || '')
+  const { data: messagesData = [], isLoading: messagesLoading, error: messagesError } = useMessages(conversationId || '')
   const sendMessage = useSendMessage()
   const markAsRead = useMarkAsRead()
   const [newMessage, setNewMessage] = useState('')
+  const [localMessages, setLocalMessages] = useState<Message[]>([])
   const [otherUser, setOtherUser] = useState<{ name: string; username: string; avatar?: string } | null>(null)
   const [participantError, setParticipantError] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const toast = useToast((s) => s.toast)
+
+  const messages = localMessages.length > 0 ? localMessages : (messagesData as Message[])
+
+  const handleNewMessage = useCallback((msg: Message) => {
+    setLocalMessages((prev) => {
+      if (prev.some((m) => m.id === msg.id)) return prev
+      return [...prev, msg]
+    })
+  }, [])
+
+  useRealtimeMessages(conversationId || '', handleNewMessage)
 
   useEffect(() => {
     if (!conversationId) return
