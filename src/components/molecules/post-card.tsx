@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
-import { Card } from '@/components/molecules/card'
 import { cn } from '@/lib/utils'
 import { timeAgo } from '@/lib/timeago'
 import { usePostComments, useAddComment } from '@/hooks/use-posts'
@@ -41,32 +40,37 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
   }
 
   return (
-    <Card padding="none">
+    <div className="bg-bg-primary">
       <div className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <Link to={`/profile/${author.username}`}>
-              <Avatar src={author.avatar} alt={author.name} />
+              <div className="relative">
+                <Avatar src={author.avatar} alt={author.name} />
+                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-bg-primary" />
+              </div>
             </Link>
             <div>
-              <Link to={`/profile/${author.username}`} className="font-semibold text-text-primary hover:underline">{author.name}</Link>
-              <div className="text-sm text-text-secondary">
-                {community && <span>in {community} · </span>}{timeAgo(timestamp)}
+              <Link to={`/profile/${author.username}`} className="font-semibold text-text-primary hover:text-accent transition-colors">{author.name}</Link>
+              <div className="flex items-center gap-1 text-sm text-text-secondary">
+                {community && <span className="text-accent font-medium">in {community}</span>}
+                {community && <span>·</span>}
+                <span>{timeAgo(timestamp)}</span>
               </div>
             </div>
           </div>
           <div className="relative">
-            <button onClick={() => setShowMenu(!showMenu)} className="p-1 rounded-full hover:bg-bg-tertiary text-text-secondary" aria-label="More options">
+            <button onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-xl hover:bg-bg-tertiary text-text-secondary transition-colors" aria-label="More options">
               <MoreHorizontal className="h-5 w-5" />
             </button>
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 z-20 w-40 bg-bg-primary border border-border rounded-lg shadow-lg py-1">
+                <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-bg-primary border border-border rounded-2xl shadow-xl py-2">
                   {isOwnPost && (
                     <button
                       onClick={() => { setShowMenu(false); onDelete?.() }}
-                      className="w-full text-left px-4 py-2 text-sm text-error hover:bg-bg-tertiary transition-colors"
+                      className="w-full text-left px-4 py-2.5 text-sm text-error hover:bg-error-light transition-colors flex items-center gap-2"
                     >
                       Delete post
                     </button>
@@ -74,7 +78,7 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
                   {!isOwnPost && (
                     <button
                       onClick={() => setShowMenu(false)}
-                      className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary transition-colors"
+                      className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2"
                     >
                       Report post
                     </button>
@@ -84,38 +88,77 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
             )}
           </div>
         </div>
-        <p className="text-text-primary whitespace-pre-wrap">{content}</p>
+        <p className="text-text-primary whitespace-pre-wrap text-[15px] leading-relaxed">{content}</p>
         {images && images.length > 0 && (
-          <div className={`mt-3 grid gap-1 rounded-lg overflow-hidden ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          <div className={`mt-3 grid gap-1 rounded-2xl overflow-hidden ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {images.map((img, i) => (
               <img key={i} src={img} alt={`Post image ${i + 1}`} className="w-full h-auto object-cover max-h-80" loading="lazy" />
             ))}
           </div>
         )}
       </div>
+
+      {/* Action bar */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-        <button onClick={onLike} className={cn('flex items-center gap-2 text-sm transition-colors', liked ? 'text-accent' : 'text-text-secondary hover:text-text-primary')} aria-label={liked ? 'Unlike' : 'Like'}>
-          <Heart className={cn('h-5 w-5', liked && 'fill-current')} /><span>{likes}</span>
-        </button>
-        <button onClick={handleCommentClick} className={cn('flex items-center gap-2 text-sm transition-colors', showComments ? 'text-accent' : 'text-text-secondary hover:text-text-primary')} aria-label={`Comment (${comments})`}>
-          <MessageCircle className={cn('h-5 w-5', showComments && 'fill-current')} /><span>{comments}</span>
-        </button>
-        <button onClick={onShare} className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors" aria-label="Share">
-          <Share2 className="h-5 w-5" /><span>Share</span>
-        </button>
-        <button onClick={onSave} className={cn('transition-colors', saved ? 'text-accent' : 'text-text-secondary hover:text-text-primary')} aria-label={saved ? 'Remove from bookmarks' : 'Bookmark'}>
-          <Bookmark className={cn('h-5 w-5', saved && 'fill-current')} />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onLike}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200',
+              liked
+                ? 'text-accent bg-accent-light'
+                : 'text-text-secondary hover:text-accent hover:bg-accent-light/50'
+            )}
+            aria-label={liked ? 'Unlike' : 'Like'}
+          >
+            <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
+            <span>{likes}</span>
+          </button>
+          <button
+            onClick={handleCommentClick}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200',
+              showComments
+                ? 'text-accent bg-accent-light'
+                : 'text-text-secondary hover:text-accent hover:bg-accent-light/50'
+            )}
+            aria-label={`Comment (${comments})`}
+          >
+            <MessageCircle className={cn('h-4 w-4', showComments && 'fill-current')} />
+            <span>{comments}</span>
+          </button>
+          <button
+            onClick={onShare}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium text-text-secondary hover:text-accent hover:bg-accent-light/50 transition-all duration-200"
+            aria-label="Share"
+          >
+            <Share2 className="h-4 w-4" />
+            <span>Share</span>
+          </button>
+        </div>
+        <button
+          onClick={onSave}
+          className={cn(
+            'p-2 rounded-xl transition-all duration-200',
+            saved
+              ? 'text-secondary bg-secondary-light'
+              : 'text-text-secondary hover:text-secondary hover:bg-secondary-light/50'
+          )}
+          aria-label={saved ? 'Remove from bookmarks' : 'Bookmark'}
+        >
+          <Bookmark className={cn('h-4 w-4', saved && 'fill-current')} />
         </button>
       </div>
 
+      {/* Comments section */}
       {showComments && postId && (
-        <div className="border-t border-border">
+        <div className="border-t border-border bg-bg-secondary/50">
           <div className="px-4 py-3">
             {commentsLoading ? (
               <div className="space-y-3">
                 {[1, 2].map((i) => (
                   <div key={i} className="flex gap-3 animate-pulse">
-                    <div className="h-8 w-8 rounded-full bg-bg-tertiary" />
+                    <div className="h-8 w-8 rounded-2xl bg-bg-tertiary" />
                     <div className="flex-1 space-y-1">
                       <div className="h-3 w-20 bg-bg-tertiary rounded" />
                       <div className="h-4 w-full bg-bg-tertiary rounded" />
@@ -124,7 +167,7 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
                 ))}
               </div>
             ) : postComments.length === 0 ? (
-              <p className="text-sm text-text-tertiary text-center py-2">No comments yet</p>
+              <p className="text-sm text-text-tertiary text-center py-4">No comments yet. Be the first to comment!</p>
             ) : (
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {postComments.map((comment) => (
@@ -134,7 +177,7 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
                     </Link>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <Link to={`/profile/${comment.user.username}`} className="text-sm font-semibold text-text-primary hover:underline">{comment.user.name}</Link>
+                        <Link to={`/profile/${comment.user.username}`} className="text-sm font-semibold text-text-primary hover:text-accent transition-colors">{comment.user.name}</Link>
                         <span className="text-xs text-text-tertiary">@{comment.user.username}</span>
                         <span className="text-xs text-text-tertiary">·</span>
                         <span className="text-xs text-text-tertiary">{timeAgo(comment.created_at)}</span>
@@ -155,16 +198,16 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
                 placeholder="Write a comment..."
                 aria-label="Write a comment"
-                className="flex-1 px-3 py-2 text-sm bg-bg-secondary border border-border rounded-full text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent"
+                className="flex-1 px-4 py-2.5 text-sm bg-bg-primary border border-border rounded-2xl text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent focus:ring-0 transition-colors"
               />
               <button
                 onClick={handleSubmitComment}
                 disabled={!commentText.trim() || addCommentMutation.isPending}
                 className={cn(
-                  'p-2 rounded-full transition-colors',
+                  'p-2.5 rounded-2xl transition-all duration-200',
                   commentText.trim() && !addCommentMutation.isPending
-                    ? 'text-accent hover:bg-accent/10'
-                    : 'text-text-tertiary'
+                    ? 'text-accent bg-accent-light hover:bg-accent hover:text-white'
+                    : 'text-text-tertiary bg-bg-tertiary'
                 )}
                 aria-label="Send comment"
               >
@@ -174,6 +217,6 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
           </div>
         </div>
       )}
-    </Card>
+    </div>
   )
 }

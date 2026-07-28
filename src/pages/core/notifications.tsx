@@ -6,11 +6,11 @@ import { Link } from 'react-router'
 import { timeAgo } from '@/lib/timeago'
 
 const iconMap = {
-  like: { icon: Heart, color: 'text-error', bg: 'bg-error/10' },
-  comment: { icon: MessageCircle, color: 'text-accent', bg: 'bg-accent/10' },
-  follow: { icon: UserPlus, color: 'text-success', bg: 'bg-success/10' },
-  mention: { icon: AtSign, color: 'text-warning', bg: 'bg-warning/10' },
-  message: { icon: MessageCircle, color: 'text-accent', bg: 'bg-accent/10' },
+  like: { icon: Heart, color: 'text-error', bg: 'bg-error-light' },
+  comment: { icon: MessageCircle, color: 'text-accent', bg: 'bg-accent-light' },
+  follow: { icon: UserPlus, color: 'text-success', bg: 'bg-success-light' },
+  mention: { icon: AtSign, color: 'text-warning', bg: 'bg-warning-light' },
+  message: { icon: MessageCircle, color: 'text-accent', bg: 'bg-accent-light' },
 }
 
 export default function NotificationsPage() {
@@ -22,9 +22,13 @@ export default function NotificationsPage() {
 
   if (error) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-text-secondary mb-2">Failed to load notifications.</p>
-        <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+      <div className="p-12 text-center">
+        <div className="h-16 w-16 rounded-3xl bg-error-light flex items-center justify-center mx-auto mb-4">
+          <span className="text-2xl">!</span>
+        </div>
+        <p className="text-text-primary font-semibold mb-1">Failed to load notifications</p>
+        <p className="text-text-tertiary text-sm mb-4">Please try again later.</p>
+        <Button variant="secondary" size="sm" onClick={() => window.location.reload()} className="rounded-2xl">
           Try again
         </Button>
       </div>
@@ -57,10 +61,10 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h1 className="text-xl font-bold text-text-primary">Notifications</h1>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => markAllRead.mutate()}>
+          <Button variant="ghost" size="sm" onClick={() => markAllRead.mutate()} className="rounded-xl text-sm font-medium">
             Mark all read
           </Button>
-          <Button variant="ghost" size="sm" aria-label="Settings">
+          <Button variant="ghost" size="sm" aria-label="Settings" className="rounded-xl">
             <Settings className="h-5 w-5" />
           </Button>
         </div>
@@ -70,8 +74,8 @@ export default function NotificationsPage() {
       {isLoading ? (
         <div className="divide-y divide-border">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
-              <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
+            <div key={i} className="flex items-center gap-3 px-4 py-4 animate-pulse">
+              <div className="h-12 w-12 rounded-2xl bg-bg-tertiary" />
               <div className="flex-1 space-y-2">
                 <div className="h-4 w-48 bg-bg-tertiary rounded" />
                 <div className="h-3 w-24 bg-bg-tertiary rounded" />
@@ -80,8 +84,11 @@ export default function NotificationsPage() {
           ))}
         </div>
       ) : notifications.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className="text-text-secondary mb-2">No notifications yet</p>
+        <div className="p-12 text-center">
+          <div className="h-16 w-16 rounded-3xl bg-accent-light flex items-center justify-center mx-auto mb-4">
+            <Heart className="h-8 w-8 text-accent" />
+          </div>
+          <p className="text-text-primary font-semibold mb-1">No notifications yet</p>
           <p className="text-text-tertiary text-sm">You'll see notifications when people interact with your posts.</p>
         </div>
       ) : (
@@ -94,11 +101,11 @@ export default function NotificationsPage() {
                 key={notification.id}
                 to={getNotificationLink(notification)}
                 onClick={() => handleClick(notification)}
-                className={`flex items-start gap-3 px-4 py-3 transition-colors ${
-                  !notification.is_read ? 'bg-accent/5' : ''
+                className={`flex items-start gap-3 px-4 py-4 transition-all duration-200 ${
+                  !notification.is_read ? 'bg-accent-light/30 hover:bg-accent-light/50' : 'hover:bg-bg-tertiary'
                 }`}
               >
-                <div className={`p-2 rounded-full ${config.bg}`}>
+                <div className={`p-2.5 rounded-2xl ${config.bg}`}>
                   <Icon className={`h-4 w-4 ${config.color}`} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -109,7 +116,7 @@ export default function NotificationsPage() {
                       size="xs"
                     />
                     <p className="text-sm text-text-primary">
-                      <span className="font-medium">{notification.from_user.name}</span>{' '}
+                      <span className="font-semibold">{notification.from_user.name}</span>{' '}
                       {notification.message}
                     </p>
                   </div>
@@ -118,7 +125,7 @@ export default function NotificationsPage() {
                   </p>
                 </div>
                 {!notification.is_read && (
-                  <div className="h-2 w-2 rounded-full bg-accent flex-shrink-0 mt-2" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-accent flex-shrink-0 mt-2" />
                 )}
               </Link>
             )
@@ -130,7 +137,7 @@ export default function NotificationsPage() {
               </div>
             )}
             {hasNextPage && !isFetchingNextPage && (
-              <Button variant="ghost" fullWidth onClick={() => fetchNextPage()}>
+              <Button variant="ghost" fullWidth onClick={() => fetchNextPage()} className="rounded-2xl font-medium">
                 Load more
               </Button>
             )}

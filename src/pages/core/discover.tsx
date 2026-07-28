@@ -23,16 +23,16 @@ export default function DiscoverPage() {
 
   return (
     <div className="max-w-[600px] mx-auto">
-      <div className="flex gap-1 overflow-x-auto border-b border-border px-4 scrollbar-none">
+      <div className="flex gap-1 overflow-x-auto border-b border-border px-2 scrollbar-none">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2',
+              'flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-200 rounded-lg my-1',
               activeTab === tab.id
-                ? 'border-accent text-accent'
-                : 'border-transparent text-text-secondary hover:text-text-primary'
+                ? 'bg-accent text-white shadow-sm'
+                : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
             )}
           >
             <tab.icon className="h-4 w-4" />

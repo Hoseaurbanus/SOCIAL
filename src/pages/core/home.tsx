@@ -138,7 +138,7 @@ export default function HomePage() {
       )}
       {/* Feed Tabs */}
       <div className="relative border-b border-border sticky top-16 bg-bg-primary z-10">
-        <div className="flex gap-1 overflow-x-auto scrollbar-none" role="tablist" aria-label="Feed filters">
+        <div className="flex gap-1 overflow-x-auto scrollbar-none px-2" role="tablist" aria-label="Feed filters">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -146,10 +146,10 @@ export default function HomePage() {
               aria-selected={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2',
+                'flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-200 rounded-lg my-1',
                 activeTab === tab.id
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-text-secondary hover:text-text-primary'
+                  ? 'bg-accent text-white shadow-sm'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
               )}
             >
               <tab.icon className="h-4 w-4" />
@@ -195,12 +195,12 @@ export default function HomePage() {
       {/* Create Post */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-text-inverse font-semibold text-sm flex-shrink-0">
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-accent to-accent-dark flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 shadow-sm">
             {user?.name?.charAt(0) || 'S'}
           </div>
           <button
             onClick={() => setShowCompose(true)}
-            className="flex-1 h-10 rounded-full border border-border bg-bg-secondary flex items-center px-4 text-text-tertiary text-sm cursor-pointer hover:bg-bg-tertiary transition-colors text-left"
+            className="flex-1 h-12 rounded-2xl border-2 border-border bg-bg-secondary flex items-center px-4 text-text-tertiary text-sm cursor-pointer hover:border-accent/30 hover:bg-accent-light/30 transition-all text-left"
           >
             What's on your mind?
           </button>
@@ -209,9 +209,12 @@ export default function HomePage() {
 
       {/* Feed */}
       {activeTab === 'communities' ? (
-        <div className="p-8 text-center">
-          <p className="text-text-secondary mb-2">No communities yet</p>
-          <p className="text-text-tertiary text-sm">Communities are coming soon.</p>
+        <div className="p-12 text-center">
+          <div className="h-16 w-16 rounded-3xl bg-accent-light flex items-center justify-center mx-auto mb-4">
+            <Grid3X3 className="h-8 w-8 text-accent" />
+          </div>
+          <p className="text-text-primary font-semibold mb-1">No communities yet</p>
+          <p className="text-text-tertiary text-sm">Communities are coming soon. Stay tuned!</p>
         </div>
       ) : isLoading ? (
         <div className="divide-y divide-border">
@@ -220,15 +223,22 @@ export default function HomePage() {
           ))}
         </div>
       ) : error ? (
-        <div className="p-8 text-center">
-          <p className="text-text-secondary">Something went wrong loading posts.</p>
-          <Button variant="secondary" size="sm" className="mt-3" onClick={() => window.location.reload()}>
+        <div className="p-12 text-center">
+          <div className="h-16 w-16 rounded-3xl bg-error-light flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">!</span>
+          </div>
+          <p className="text-text-primary font-semibold mb-1">Something went wrong</p>
+          <p className="text-text-tertiary text-sm mb-4">Failed to load posts. Please try again.</p>
+          <Button variant="secondary" size="sm" onClick={() => window.location.reload()} className="rounded-2xl">
             Try again
           </Button>
         </div>
       ) : posts.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className="text-text-secondary mb-2">No posts yet</p>
+        <div className="p-12 text-center">
+          <div className="h-16 w-16 rounded-3xl bg-accent-light flex items-center justify-center mx-auto mb-4">
+            <LayoutGrid className="h-8 w-8 text-accent" />
+          </div>
+          <p className="text-text-primary font-semibold mb-1">Your feed is empty</p>
           <p className="text-text-tertiary text-sm">Follow people or join communities to see posts here.</p>
         </div>
       ) : (
