@@ -7,8 +7,10 @@ import { SkeletonPost } from '@/components/atoms/skeleton'
 import { ComposeModal } from '@/components/organisms/compose-modal'
 import { cn } from '@/lib/utils'
 import { useFeedPosts, useFollowingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
+import { useStories, useCreateStory } from '@/hooks/use-stories'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/config/supabase'
 
 const tabs = [
   { id: 'for-you', label: 'For You', icon: LayoutGrid },
@@ -21,9 +23,12 @@ const tabs = [
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('for-you')
   const [showCompose, setShowCompose] = useState(false)
+  const [showStoryViewer, setShowStoryViewer] = useState<string | null>(null)
   const user = useAuthStore((s) => s.user)
   const feedQuery = useFeedPosts()
   const followingQuery = useFollowingPosts()
+  const { data: stories = [] } = useStories()
+  const createStory = useCreateStory()
 
   const activeQuery = activeTab === 'following' ? followingQuery : feedQuery
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeQuery
@@ -138,9 +143,30 @@ export default function HomePage() {
 
       {/* Stories */}
       <Stories
-        stories={[]}
-        onStoryClick={() => {}}
-        onAddStory={() => {}}
+        stories={stories.map((s) => ({ id: s.id, username: s.user.username, avatar: s.user.avatar, seen: false }))}
+        onStoryClick={(id) => setShowStoryViewer(id)}
+        onAddStory={async () => {
+          const input = document.createElement('input')
+          input.type = 'file'
+          input.accept = 'image/*'
+          input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0]
+            if (!file) return
+            try {
+              const fileExt = file.name.split('.').pop()
+              const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+              const filePath = `stories/${fileName}`
+              const { error } = await supabase.storage.from('stories').upload(filePath, file)
+              if (error) throw error
+              const { data: urlData } = supabase.storage.from('stories').getPublicUrl(filePath)
+              await createStory.mutateAsync({ mediaUrl: urlData.publicUrl, mediaType: 'image' })
+              toast({ title: 'Story added!', variant: 'success' })
+            } catch (err: any) {
+              toast({ title: err.message || 'Failed to add story', variant: 'error' })
+            }
+          }
+          input.click()
+        }}
       />
 
       {/* Create Post */}
