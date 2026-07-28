@@ -1,7 +1,17 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/atoms/button'
+import { Avatar } from '@/components/atoms/avatar'
 import { cn } from '@/lib/utils'
+import { useUpdateProfile, useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
+import { useAuthStore } from '@/stores/auth-store'
+import { supabase } from '@/config/supabase'
+import { useToast } from '@/hooks/use-toast'
+
+const INTERESTS = [
+  'Technology', 'Design', 'Photography', 'Music', 'Sports', 'Travel',
+  'Food', 'Art', 'Science', 'Business', 'Gaming', 'Books', 'Fashion', 'Fitness',
+]
 
 const steps = [
   { title: 'Choose your interests', description: 'Select topics you care about' },
@@ -25,6 +35,9 @@ export default function OnboardingPage() {
             <div key={i} className={cn('h-2 w-8 rounded-full transition-colors', i === currentStep ? 'bg-accent' : 'bg-bg-tertiary')} />
           ))}
         </div>
+        {currentStep === 0 && <InterestsStep />}
+        {currentStep === 1 && <FollowStep />}
+        {currentStep === 2 && <ProfileStep />}
         <div className="space-y-3">
           <Button fullWidth onClick={() => {
             if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1)
@@ -37,6 +50,164 @@ export default function OnboardingPage() {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function InterestsStep() {
+  const [selected, setSelected] = useState<string[]>([])
+
+  const toggle = (interest: string) => {
+    setSelected((prev) =>
+      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {INTERESTS.map((interest) => (
+        <button
+          key={interest}
+          onClick={() => toggle(interest)}
+          className={cn(
+            'px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors',
+            selected.includes(interest)
+              ? 'bg-accent text-white border-accent'
+              : 'bg-bg-primary text-text-primary border-border hover:bg-bg-tertiary'
+          )}
+        >
+          {interest}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function FollowStep() {
+  const [users, setUsers] = useState<Array<{ id: string; name: string; username: string; avatar?: string; bio?: string }>>([])
+  const [loading, setLoading] = useState(true)
+  const toggleFollow = useToggleFollow()
+  const { data: followingMap } = useFollowStatus(users.map((u) => u.id))
+  const currentUser = useAuthStore((s) => s.user)
+
+  useState(() => {
+    const loadUsers = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, username, avatar, bio')
+        .neq('id', currentUser?.id || '')
+        .limit(8)
+      if (!error && data) setUsers(data)
+      setLoading(false)
+    }
+    loadUsers()
+  })
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+            <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-24 bg-bg-tertiary rounded" />
+              <div className="h-3 w-32 bg-bg-tertiary rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {users.map((u) => {
+        const isFollowing = followingMap?.[u.id] || false
+        return (
+          <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg">
+            <Avatar src={u.avatar} alt={u.name} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-text-primary truncate">{u.name}</p>
+              <p className="text-xs text-text-secondary truncate">@{u.username}</p>
+            </div>
+            <Button
+              variant={isFollowing ? 'secondary' : 'primary'}
+              size="sm"
+              onClick={() => toggleFollow.mutate(u.id)}
+              loading={toggleFollow.isPending}
+            >
+              {isFollowing ? 'Following' : 'Follow'}
+            </Button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function ProfileStep() {
+  const [bio, setBio] = useState('')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const updateProfile = useUpdateProfile()
+  const user = useAuthStore((s) => s.user)
+  const { toast } = useToast()
+
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setAvatarFile(file)
+      setAvatarPreview(URL.createObjectURL(file))
+    }
+  }
+
+  const handleSave = async () => {
+    setUploading(true)
+    try {
+      let avatarUrl = user?.avatar
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop()
+        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+        const filePath = `avatars/${fileName}`
+        const { error } = await supabase.storage.from('avatars').upload(filePath, avatarFile)
+        if (error) throw error
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+        avatarUrl = urlData.publicUrl
+      }
+      await updateProfile.mutateAsync({ bio, avatar: avatarUrl })
+      toast({ title: 'Profile updated!', variant: 'success' })
+    } catch (err: any) {
+      toast({ title: err.message || 'Failed to update profile', variant: 'error' })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-center">
+        <div className="relative">
+          <Avatar src={avatarPreview || user?.avatar} alt="Avatar" size="xl" />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-accent text-white flex items-center justify-center text-xs font-medium"
+          >
+            Edit
+          </button>
+        </div>
+      </div>
+      <textarea
+        value={bio}
+        onChange={(e) => setBio(e.target.value)}
+        placeholder="Write a bio..."
+        rows={3}
+        maxLength={160}
+        className="w-full bg-bg-primary border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/20 resize-none"
+      />
+      <p className="text-xs text-text-tertiary text-right">{bio.length}/160</p>
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
     </div>
   )
 }
