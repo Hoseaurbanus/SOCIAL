@@ -43,8 +43,7 @@ export function BottomNav() {
               to={item.to}
               className="relative flex flex-col items-center justify-center min-w-[56px] h-full py-2"
             >
-              {() => (
-                <div className="relative flex flex-col items-center gap-1">
+              <div className="relative flex flex-col items-center gap-1">
                   {/* Active indicator pill */}
                   <div
                     className={cn(
@@ -82,7 +81,6 @@ export function BottomNav() {
                     {item.label}
                   </span>
                 </div>
-              )}
             </NavLink>
           )
         })}

@@ -20,7 +20,7 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
   const [showComments, setShowComments] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [commentText, setCommentText] = useState('')
-  const { data: postComments = [], isLoading: commentsLoading } = usePostComments(postId || '')
+  const { data: postComments = [], isLoading: commentsLoading } = usePostComments(showComments && postId ? postId : '')
   const addCommentMutation = useAddComment()
 
   const handleSubmitComment = () => {
@@ -45,10 +45,7 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <Link to={`/profile/${author.username}`}>
-              <div className="relative">
-                <Avatar src={author.avatar} alt={author.name} />
-                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-bg-primary" />
-              </div>
+              <Avatar src={author.avatar} alt={author.name} />
             </Link>
             <div>
               <Link to={`/profile/${author.username}`} className="font-semibold text-text-primary hover:text-accent transition-colors">{author.name}</Link>
@@ -92,7 +89,7 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
         {images && images.length > 0 && (
           <div className={`mt-3 grid gap-1 rounded-2xl overflow-hidden ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {images.map((img, i) => (
-              <img key={i} src={img} alt={`Post image ${i + 1}`} className="w-full h-auto object-cover max-h-80" loading="lazy" />
+              <img key={i} src={img} alt={`Post image ${i + 1}`} className="w-full h-auto object-cover max-h-96" loading="lazy" />
             ))}
           </div>
         )}
@@ -133,7 +130,7 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
             aria-label="Share"
           >
             <Share2 className="h-4 w-4" />
-            <span>Share</span>
+            <span className="hidden sm:inline">Share</span>
           </button>
         </div>
         <button

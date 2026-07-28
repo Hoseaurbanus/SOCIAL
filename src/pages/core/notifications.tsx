@@ -4,6 +4,7 @@ import { Avatar } from '@/components/atoms/avatar'
 import { useNotifications, useMarkNotificationRead, useMarkAllRead } from '@/hooks/use-notifications'
 import { Link } from 'react-router'
 import { timeAgo } from '@/lib/timeago'
+import { cn } from '@/lib/utils'
 
 const iconMap = {
   like: { icon: Heart, color: 'text-error', bg: 'bg-error-light' },
@@ -101,9 +102,11 @@ export default function NotificationsPage() {
                 key={notification.id}
                 to={getNotificationLink(notification)}
                 onClick={() => handleClick(notification)}
-                className={`flex items-start gap-3 px-4 py-4 transition-all duration-200 ${
+                aria-label={`${notification.from_user.name} ${notification.message}`}
+                className={cn(
+                  'flex items-start gap-3 px-4 py-4 transition-all duration-200',
                   !notification.is_read ? 'bg-accent-light/30 hover:bg-accent-light/50' : 'hover:bg-bg-tertiary'
-                }`}
+                )}
               >
                 <div className={`p-2.5 rounded-2xl ${config.bg}`}>
                   <Icon className={`h-4 w-4 ${config.color}`} />

@@ -84,7 +84,7 @@ export default function ConversationPage() {
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-bg-primary">
-        <button onClick={() => navigate('/messages')} className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary">
+        <button onClick={() => navigate('/messages')} className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary" aria-label="Go back">
           <ChevronLeft className="h-5 w-5" />
         </button>
         <Avatar src={otherUser?.avatar} alt={otherUser?.name} size="sm" />
@@ -99,7 +99,7 @@ export default function ConversationPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4" aria-live="polite">
         {messagesLoading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent" />
@@ -126,7 +126,7 @@ export default function ConversationPage() {
                     : 'bg-bg-tertiary text-text-primary rounded-bl-sm'
                 }`}>
                   <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                  <p className={`text-[10px] mt-1 ${isOwn ? 'text-white/70' : 'text-text-tertiary'}`}>
+                  <p className={`text-[10px] mt-1 ${isOwn ? 'text-white/70 dark:text-text-primary/70' : 'text-text-tertiary'}`}>
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -143,11 +143,15 @@ export default function ConversationPage() {
           <textarea
             ref={inputRef}
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value)
+              e.target.style.height = 'auto'
+              e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px'
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}
-            className="flex-1 resize-none rounded-2xl border border-border bg-bg-secondary px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors max-h-32"
+            className="flex-1 resize-none rounded-2xl border border-border bg-bg-secondary px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors max-h-32 min-h-[40px]"
             aria-label="Message input"
           />
           <button

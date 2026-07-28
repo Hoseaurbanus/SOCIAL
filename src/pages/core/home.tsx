@@ -128,7 +128,7 @@ export default function HomePage() {
       {(pullDistance > 0 || isRefreshing) && (
         <div
           className="flex items-center justify-center overflow-hidden transition-all"
-          style={{ height: isRefreshing ? 48 : pullDistance }}
+          style={{ height: isRefreshing ? '3rem' : pullDistance }}
         >
           <RefreshCw
             className={`h-5 w-5 text-accent ${isRefreshing ? 'animate-spin' : ''}`}
@@ -242,7 +242,7 @@ export default function HomePage() {
           <p className="text-text-tertiary text-sm">Follow people or join communities to see posts here.</p>
         </div>
       ) : (
-        <div className="divide-y divide-border">
+        <div className="divide-y divide-border" aria-live="polite">
           {posts.map((post) => (
             <PostCard
               key={post.id}

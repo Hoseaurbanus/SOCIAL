@@ -23,10 +23,12 @@ export default function DiscoverPage() {
 
   return (
     <div className="max-w-[600px] mx-auto">
-      <div className="flex gap-1 overflow-x-auto border-b border-border px-2 scrollbar-none">
+      <div className="flex gap-1 overflow-x-auto border-b border-border px-2 scrollbar-none" role="tablist" aria-label="Discover filters">
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
               'flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-200 rounded-lg my-1',
@@ -319,14 +321,14 @@ function CommunitiesTab() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Community name"
-            className="w-full bg-bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="w-full bg-bg-secondary border-2 border-border rounded-2xl px-3 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-0 transition-colors"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Description (optional)"
             rows={2}
-            className="w-full bg-bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/20 resize-none"
+            className="w-full bg-bg-secondary border-2 border-border rounded-2xl px-3 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-0 transition-colors resize-none"
           />
           <Button fullWidth size="sm" loading={createCommunity.isPending} onClick={handleCreate} disabled={!name.trim()}>
             Create Community

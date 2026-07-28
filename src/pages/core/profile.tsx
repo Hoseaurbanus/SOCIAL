@@ -152,11 +152,11 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex gap-4 mt-3">
-          <button className="text-sm hover:underline" onClick={() => {}}>
+          <button className="text-sm hover:underline" onClick={() => {}} aria-label={`${followCounts?.following || 0} following`}>
             <strong className="text-text-primary">{followCounts?.following || 0}</strong>{' '}
             <span className="text-text-tertiary">Following</span>
           </button>
-          <button className="text-sm hover:underline" onClick={() => {}}>
+          <button className="text-sm hover:underline" onClick={() => {}} aria-label={`${followCounts?.followers || 0} followers`}>
             <strong className="text-text-primary">{followCounts?.followers || 0}</strong>{' '}
             <span className="text-text-tertiary">Followers</span>
           </button>

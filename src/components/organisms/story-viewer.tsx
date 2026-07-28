@@ -55,6 +55,11 @@ export function StoryViewer({ stories, initialIndex = 0, onClose }: StoryViewerP
   }, [currentIndex, goNext])
 
   useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
       if (e.key === 'ArrowRight') goNext()

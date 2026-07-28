@@ -56,7 +56,7 @@ export default function MessagesPage() {
             placeholder="Search messages..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-lg border border-border bg-bg-secondary text-text-primary text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors"
+            className="w-full h-10 pl-10 pr-4 rounded-2xl border-2 border-border bg-bg-secondary text-text-primary text-sm focus:border-accent focus:ring-0 transition-colors"
             aria-label="Search messages"
           />
         </div>
@@ -89,13 +89,12 @@ export default function MessagesPage() {
               <Link
                 key={conv.id}
                 to={`/messages/${conv.id}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-bg-secondary transition-colors"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-bg-tertiary transition-colors"
               >
                 <Avatar
                   src={other.avatar}
                   alt={other.name}
                   size="md"
-                  status="online"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">

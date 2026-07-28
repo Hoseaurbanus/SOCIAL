@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { X, Image, Smile, MapPin } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
@@ -8,6 +8,25 @@ import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/config/supabase'
 import { cn } from '@/lib/utils'
+
+function ImagePreviews({ files, onRemove }: { files: File[]; onRemove: (i: number) => void }) {
+  const urls = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files])
+  useEffect(() => {
+    return () => urls.forEach((u) => URL.revokeObjectURL(u))
+  }, [urls])
+  return (
+    <div className="flex gap-2 overflow-x-auto mb-3">
+      {urls.map((url, i) => (
+        <div key={i} className="relative flex-shrink-0">
+          <img src={url} alt="" className="h-20 w-20 object-cover rounded-lg" />
+          <button onClick={() => onRemove(i)} className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-bg-primary border border-border flex items-center justify-center" aria-label="Remove image">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 interface ComposeModalProps {
   isOpen: boolean
@@ -34,6 +53,14 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
     }
   }, [isOpen])
 
+  const handleClose = useCallback(() => {
+    setContent('')
+    setError('')
+    setSelectedImages([])
+    setLocation(null)
+    onClose()
+  }, [onClose])
+
   useEffect(() => {
     if (!isOpen) return
     const handleEscape = (e: KeyboardEvent) => {
@@ -41,15 +68,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
     }
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen])
-
-  const handleClose = () => {
-    setContent('')
-    setError('')
-    setSelectedImages([])
-    setLocation(null)
-    onClose()
-  }
+  }, [isOpen, handleClose])
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -169,7 +188,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label="Create post">
-      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
+      <div className="absolute inset-0 bg-overlay" onClick={handleClose} />
       <div className="relative w-full sm:max-w-[520px] bg-bg-primary rounded-t-2xl sm:rounded-2xl animate-slide-up max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -197,16 +216,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
 
           {/* Image Previews */}
           {selectedImages.length > 0 && (
-            <div className="flex gap-2 overflow-x-auto mb-3">
-              {selectedImages.map((file, i) => (
-                <div key={i} className="relative flex-shrink-0">
-                  <img src={URL.createObjectURL(file)} alt="" className="h-20 w-20 object-cover rounded-lg" />
-                  <button onClick={() => removeImage(i)} className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-bg-primary border border-border flex items-center justify-center">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
+            <ImagePreviews files={selectedImages} onRemove={removeImage} />
           )}
 
           <div className="flex gap-3">
@@ -218,9 +228,9 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
                 onChange={(e) => setContent(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="What's happening?"
-                rows={6}
+                rows={4}
                 maxLength={500}
-                className="w-full bg-transparent text-text-primary text-base resize-none outline-none placeholder:text-text-tertiary"
+                className="w-full bg-transparent text-text-primary text-base resize-none outline-none placeholder:text-text-tertiary min-h-[120px]"
                 aria-label="Post content"
               />
             </div>
