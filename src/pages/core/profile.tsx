@@ -4,7 +4,7 @@ import { Settings, MapPin, LinkIcon, Calendar } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { PostCard } from '@/components/molecules/post-card'
-import { useProfile, useFollowCounts, useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
+import { useProfile, useProfileById, useFollowCounts, useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
 import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost, useLikedPosts, useBookmarkedPosts, useUserReplies } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
@@ -13,7 +13,13 @@ export default function ProfilePage() {
   const { username } = useParams<{ username: string }>()
   const currentUser = useAuthStore((s) => s.user)
   const authLoading = useAuthStore((s) => s.isLoading)
-  const { data: profile, isLoading: profileLoading } = useProfile(username || currentUser?.username || '')
+  const { data: profileByUsername, isLoading: profileByUsernameLoading } = useProfile(username || '')
+  const { data: profileById, isLoading: profileByIdLoading } = useProfileById(
+    !username && currentUser?.id ? currentUser.id : ''
+  )
+  const isOwnProfile = !username && !!currentUser
+  const profile = profileByUsername || (isOwnProfile ? profileById : null)
+  const profileLoading = username ? profileByUsernameLoading : (isOwnProfile ? profileByIdLoading : profileByUsernameLoading)
   const { data: followCounts } = useFollowCounts(profile?.id || '')
   const toggleFollow = useToggleFollow()
   const { data: isFollowing } = useFollowStatus(profile?.id ? [profile.id] : [])
@@ -29,7 +35,6 @@ export default function ProfilePage() {
   const postIds = posts.map((p) => p.id)
   const { data: likedMap } = useLikeStatus(postIds)
   const { data: bookmarkedMap } = useBookmarkStatus(postIds)
-  const isOwnProfile = currentUser?.username === username || (!username && currentUser?.username)
 
   const { data: likedPosts, isLoading: likedLoading } = useLikedPosts(profile?.id || '')
   const { data: bookmarkedPosts, isLoading: bookmarkedLoading } = useBookmarkedPosts(profile?.id || '')

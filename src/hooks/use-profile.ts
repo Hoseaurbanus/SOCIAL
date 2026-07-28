@@ -1,11 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchProfile, updateProfile, uploadAvatar, toggleFollow, checkFollowStatus, getFollowCounts, fetchFollowers, fetchFollowing } from '@/api/profile'
+import { fetchProfile, fetchProfileById, updateProfile, uploadAvatar, toggleFollow, checkFollowStatus, getFollowCounts, fetchFollowers, fetchFollowing } from '@/api/profile'
 
 export function useProfile(username: string) {
   return useQuery({
     queryKey: ['profile', username],
     queryFn: () => fetchProfile(username),
     enabled: !!username,
+  })
+}
+
+export function useProfileById(id: string) {
+  return useQuery({
+    queryKey: ['profile', 'id', id],
+    queryFn: () => fetchProfileById(id),
+    enabled: !!id,
   })
 }
 
