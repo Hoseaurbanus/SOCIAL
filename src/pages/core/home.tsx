@@ -9,7 +9,7 @@ import { StoryViewer } from '@/components/organisms/story-viewer'
 import { StoryCreator } from '@/components/organisms/story-creator'
 import { cn } from '@/lib/utils'
 import { useFeedPosts, useFollowingPosts, useTrendingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
-import { useStories, useCreateStory } from '@/hooks/use-stories'
+import { useStories, useCreateStory, useReplyToStory } from '@/hooks/use-stories'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import type { StoryDraft } from '@/components/organisms/story-creator'
@@ -31,8 +31,9 @@ export default function HomePage() {
   const feedQuery = useFeedPosts()
   const followingQuery = useFollowingPosts()
   const trendingQuery = useTrendingPosts()
-  const { data: stories = [] } = useStories()
+  const { data: stories = [], refetch: refetchStories } = useStories()
   const createStory = useCreateStory()
+  const replyToStory = useReplyToStory()
 
   const activeQuery = activeTab === 'following' ? followingQuery : activeTab === 'trending' ? trendingQuery : feedQuery
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeQuery
@@ -93,12 +94,12 @@ export default function HomePage() {
   const handleTouchEnd = useCallback(async () => {
     if (pullDistance > 50) {
       setIsRefreshing(true)
-      await refetch()
+      await Promise.all([refetch(), refetchStories()])
       setIsRefreshing(false)
     }
     setPullDistance(0)
     startY.current = 0
-  }, [pullDistance, refetch])
+  }, [pullDistance, refetch, refetchStories])
 
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) return
@@ -269,8 +270,13 @@ export default function HomePage() {
           stories={stories}
           initialIndex={viewingStoryIndex}
           onClose={() => setViewingStoryIndex(null)}
-          onReply={() => {
-            toast({ title: 'Reply sent!', variant: 'success' })
+          onReply={async (storyId, message) => {
+            try {
+              await replyToStory.mutateAsync({ storyId, message })
+              toast({ title: 'Reply sent!', variant: 'success' })
+            } catch {
+              toast({ title: 'Failed to send reply', variant: 'error' })
+            }
           }}
         />
       )}

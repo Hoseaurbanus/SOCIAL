@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchStories, createStoryFromDraft, deleteStory, addStoryReaction, removeStoryReaction, markStoryViewed, fetchStoryViews, fetchStoryReactions } from '@/api/stories'
+import { fetchStories, createStoryFromDraft, deleteStory, addStoryReaction, removeStoryReaction, markStoryViewed, fetchStoryViews, fetchStoryReactions, replyToStory } from '@/api/stories'
 import type { StoryDraft } from '@/components/organisms/story-creator'
 
 export function useStories() {
@@ -34,7 +34,31 @@ export function useStoryReaction() {
   return useMutation({
     mutationFn: ({ storyId, emoji }: { storyId: string; emoji: string }) =>
       addStoryReaction(storyId, emoji),
-    onSuccess: () => {
+    onMutate: async ({ storyId }) => {
+      await queryClient.cancelQueries({ queryKey: ['stories'] })
+      const previous = queryClient.getQueryData(['stories'])
+      queryClient.setQueryData(['stories'], (old: any[] | undefined) => {
+        if (!old) return old
+        return old.map((s: any) => {
+          if (s.id !== storyId) return s
+          const alreadyReacted = s.has_reacted
+          return {
+            ...s,
+            has_reacted: !alreadyReacted,
+            reaction_count: alreadyReacted
+              ? Math.max((s.reaction_count || 1) - 1, 0)
+              : (s.reaction_count || 0) + 1,
+          }
+        })
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['stories'], context.previous)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['stories'] })
     },
   })
@@ -69,5 +93,16 @@ export function useStoryReactions(storyId: string) {
     queryKey: ['story-reactions', storyId],
     queryFn: () => fetchStoryReactions(storyId),
     enabled: !!storyId,
+  })
+}
+
+export function useReplyToStory() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ storyId, message }: { storyId: string; message: string }) =>
+      replyToStory(storyId, message),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+    },
   })
 }

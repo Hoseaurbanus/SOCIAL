@@ -21,7 +21,7 @@ export function Stories({ stories, onStoryClick, onAddStory, userAvatar, current
             <Plus className="h-3 w-3 text-text-inverse" />
           </div>
         </div>
-        <span className="text-xs text-text-secondary">Your Story</span>
+        <span className="text-xs font-medium text-accent">Your Story</span>
       </button>
       {stories.map((story) => {
         const isOwn = story.user_id === currentUserId
@@ -51,7 +51,10 @@ export function Stories({ stories, onStoryClick, onAddStory, userAvatar, current
                 )}
               </div>
             </div>
-            <span className="text-xs text-text-secondary truncate max-w-[64px]">
+            <span className={cn(
+              'text-xs truncate max-w-[64px]',
+              isOwn ? 'font-medium text-accent' : 'text-text-secondary'
+            )}>
               {isOwn ? 'Your Story' : story.user.username}
             </span>
           </button>

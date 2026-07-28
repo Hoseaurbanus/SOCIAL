@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, ChevronLeft, ChevronRight, Music, Eye, Send, Pause, Play } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { X, ChevronLeft, ChevronRight, Music, Eye, Send, Pause, Play, Trash2 } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
 import { timeAgo } from '@/lib/timeago'
 import { cn } from '@/lib/utils'
-import { useMarkStoryViewed, useStoryReaction, useStoryViews } from '@/hooks/use-stories'
+import { useMarkStoryViewed, useStoryReaction, useStoryViews, useDeleteStory } from '@/hooks/use-stories'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 import type { Story } from '@/types/api'
 
 interface StoryViewerProps {
@@ -23,14 +25,22 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
   const [showReply, setShowReply] = useState(false)
   const [showViewers, setShowViewers] = useState(false)
   const [musicPlaying, setMusicPlaying] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const touchDeltaRef = useRef(0)
   const user = useAuthStore((s) => s.user)
   const markViewed = useMarkStoryViewed()
   const addReaction = useStoryReaction()
+  const deleteStory = useDeleteStory()
+  const toast = useToast((s) => s.toast)
+  const navigate = useNavigate()
   const replyInputRef = useRef<HTMLTextAreaElement>(null)
 
   const story = stories[currentIndex]
   const isLast = currentIndex === stories.length - 1
   const isOwn = story?.user_id === user?.id
+  const isPaused = showReply || showViewers || showDeleteConfirm
 
   const goNext = useCallback(() => {
     if (isLast) {
@@ -56,9 +66,13 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
     if (story) {
       markViewed.mutate(story.id)
     }
+    // Only run when story changes index
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story?.id])
 
+  // Auto-advance timer — pauses when reply/viewers/delete confirm is open
   useEffect(() => {
+    if (isPaused) return
     setProgress(0)
     const interval = setInterval(() => {
       setProgress((p) => {
@@ -70,7 +84,7 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
       })
     }, 100)
     return () => clearInterval(interval)
-  }, [currentIndex, goNext])
+  }, [currentIndex, goNext, isPaused])
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -79,13 +93,63 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        if (showReply || showViewers || showDeleteConfirm) {
+          setShowReply(false)
+          setShowViewers(false)
+          setShowDeleteConfirm(false)
+        } else {
+          onClose()
+        }
+      }
       if (e.key === 'ArrowRight') goNext()
       if (e.key === 'ArrowLeft') goPrev()
     }
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
-  }, [onClose, goNext, goPrev])
+  }, [onClose, goNext, goPrev, showReply, showViewers, showDeleteConfirm])
+
+  // Music sync — play/pause audio when musicPlaying changes
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (musicPlaying) {
+      audio.play().catch(() => setMusicPlaying(false))
+    } else {
+      audio.pause()
+    }
+  }, [musicPlaying])
+
+  // Reset music state on story change
+  useEffect(() => {
+    setMusicPlaying(false)
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+  }, [currentIndex])
+
+  // Touch swipe handlers for mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    touchDeltaRef.current = 0
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
+    const dx = e.touches[0].clientX - touchStartRef.current.x
+    touchDeltaRef.current = dx
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    const dx = touchDeltaRef.current
+    if (Math.abs(dx) > 60) {
+      if (dx < 0) goNext()
+      else goPrev()
+    }
+    touchStartRef.current = null
+    touchDeltaRef.current = 0
+  }, [goNext, goPrev])
 
   const handleReaction = (emoji: string) => {
     if (!story) return
@@ -99,10 +163,50 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
     setShowReply(false)
   }
 
+  const handleDelete = async () => {
+    if (!story) return
+    try {
+      await deleteStory.mutateAsync(story.id)
+      toast({ title: 'Story deleted', variant: 'success' })
+      setShowDeleteConfirm(false)
+      if (stories.length <= 1) {
+        onClose()
+      } else {
+        goNext()
+      }
+    } catch {
+      toast({ title: 'Failed to delete story', variant: 'error' })
+    }
+  }
+
+  const handleViewProfile = (username: string) => {
+    onClose()
+    navigate(`/profile/${username}`)
+  }
+
   if (!story) return null
 
   return (
-    <div className="fixed inset-0 z-modal bg-black flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Story viewer">
+    <div
+      className="fixed inset-0 z-modal bg-black flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Story viewer"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Hidden audio element for music playback */}
+      {story.music_url && (
+        <audio
+          ref={audioRef}
+          src={story.music_url}
+          loop
+          preload="auto"
+          onError={() => setMusicPlaying(false)}
+        />
+      )}
+
       <button onClick={onClose} className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors" aria-label="Close story">
         <X className="h-6 w-6" />
       </button>
@@ -112,9 +216,10 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
         {stories.map((_, i) => (
           <div key={i} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
             <div
-              className="h-full bg-white rounded-full transition-all duration-100"
+              className="h-full bg-white rounded-full"
               style={{
                 width: i < currentIndex ? '100%' : i === currentIndex ? `${progress}%` : '0%',
+                transition: isPaused ? 'none' : undefined,
               }}
             />
           </div>
@@ -123,20 +228,31 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
 
       {/* User info */}
       <div className="absolute top-6 left-0 right-0 z-20 flex items-center gap-3 px-4">
-        <Avatar src={story.user.avatar} alt={story.user.name} size="sm" />
-        <div className="flex-1 min-w-0">
-          <span className="text-sm font-semibold text-white">{story.user.name}</span>
-          <span className="text-xs text-white/60 ml-2">{timeAgo(story.created_at)}</span>
-        </div>
+        <button onClick={() => handleViewProfile(story.user.username)} className="flex items-center gap-3 min-w-0">
+          <Avatar src={story.user.avatar} alt={story.user.name} size="sm" />
+          <div className="flex-1 min-w-0 text-left">
+            <span className="text-sm font-semibold text-white">{story.user.name}</span>
+            <span className="text-xs text-white/60 ml-2">{timeAgo(story.created_at)}</span>
+          </div>
+        </button>
         {isOwn && (
-          <button
-            onClick={() => setShowViewers(!showViewers)}
-            className="flex items-center gap-1 text-xs text-white/70 hover:text-white"
-            aria-label={`${story.view_count || 0} views`}
-          >
-            <Eye className="h-4 w-4" />
-            {story.view_count || 0}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowViewers(!showViewers)}
+              className="flex items-center gap-1 text-xs text-white/70 hover:text-white"
+              aria-label={`${story.view_count || 0} views`}
+            >
+              <Eye className="h-4 w-4" />
+              {story.view_count || 0}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-1.5 rounded-full bg-black/30 hover:bg-red-500/50 text-white/70 hover:text-white transition-colors"
+              aria-label="Delete story"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -222,7 +338,32 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
 
       {/* Viewers panel (own stories) */}
       {showViewers && isOwn && (
-        <StoryViewersPanel storyId={story.id} onClose={() => setShowViewers(false)} />
+        <StoryViewersPanel storyId={story.id} onClose={() => setShowViewers(false)} onViewProfile={handleViewProfile} />
+      )}
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-bg-primary rounded-2xl p-6 mx-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-lg font-semibold text-text-primary mb-2">Delete story?</h3>
+            <p className="text-sm text-text-secondary mb-6">This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 h-11 rounded-2xl border-2 border-border text-text-secondary font-medium hover:bg-bg-tertiary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteStory.isPending}
+                className="flex-1 h-11 rounded-2xl bg-error text-white font-medium hover:bg-error-hover transition-colors disabled:opacity-50"
+              >
+                {deleteStory.isPending ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Navigation arrows */}
@@ -245,13 +386,13 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
       </div>
 
       {/* Bottom bar: reactions + reply */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
+      <div className="absolute bottom-0 left-0 right-0 z-20 p-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}>
         <div className="flex items-center gap-2 mb-2">
           {QUICK_REACTIONS.map((emoji) => (
             <button
               key={emoji}
               onClick={() => handleReaction(emoji)}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 text-xl transition-colors active:scale-125"
+              className="h-10 w-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 text-xl transition-colors active:scale-125"
               aria-label={`React with ${emoji}`}
             >
               {emoji}
@@ -262,7 +403,7 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
               setShowReply(!showReply)
               setTimeout(() => replyInputRef.current?.focus(), 100)
             }}
-            className="ml-auto px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors"
+            className="ml-auto px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white text-sm font-medium transition-colors"
             aria-label="Reply to story"
           >
             Reply
@@ -302,7 +443,7 @@ export function StoryViewer({ stories, initialIndex = 0, onClose, onReply }: Sto
   )
 }
 
-function StoryViewersPanel({ storyId, onClose }: { storyId: string; onClose: () => void }) {
+function StoryViewersPanel({ storyId, onClose, onViewProfile }: { storyId: string; onClose: () => void; onViewProfile: (username: string) => void }) {
   const { data: viewers = [] } = useStoryViews(storyId)
 
   return (
@@ -318,14 +459,18 @@ function StoryViewersPanel({ storyId, onClose }: { storyId: string; onClose: () 
           <p className="text-center text-text-tertiary text-sm py-8">No viewers yet</p>
         ) : (
           viewers.map((v: any, i: number) => (
-            <div key={i} className="flex items-center gap-3 px-4 py-3">
+            <button
+              key={i}
+              onClick={() => v.user?.username && onViewProfile(v.user.username)}
+              className="flex items-center gap-3 px-4 py-3 w-full hover:bg-bg-tertiary transition-colors text-left"
+            >
               <Avatar src={v.user?.avatar} alt={v.user?.name} size="sm" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text-primary">{v.user?.name}</p>
                 <p className="text-xs text-text-tertiary">@{v.user?.username}</p>
               </div>
               <span className="text-xs text-text-tertiary">{timeAgo(v.viewed_at)}</span>
-            </div>
+            </button>
           ))
         )}
       </div>

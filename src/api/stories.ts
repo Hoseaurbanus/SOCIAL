@@ -44,7 +44,7 @@ export async function createStoryFromDraft(draft: StoryDraft): Promise<Story> {
     const fileExt = draft.mediaFile.name.split('.').pop()
     const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
     const filePath = `stories/${fileName}`
-    const bucket = draft.mode === 'video' ? 'stories' : 'stories'
+    const bucket = 'stories'
     const { error } = await supabase.storage.from(bucket).upload(filePath, draft.mediaFile)
     if (error) throw error
     const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath)
@@ -144,7 +144,11 @@ export async function fetchStoryViews(storyId: string) {
     .eq('story_id', storyId)
     .order('viewed_at', { ascending: false })
 
-  if (error) throw error
+  if (error) {
+    // Graceful fallback: return empty if RLS blocks (non-owner)
+    if (error.code === '42501' || error.code === '42P01') return []
+    throw error
+  }
   return data || []
 }
 
@@ -156,4 +160,70 @@ export async function fetchStoryReactions(storyId: string) {
 
   if (error) throw error
   return data || []
+}
+
+export async function replyToStory(storyId: string, message: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data: story, error: storyError } = await supabase
+    .from('stories')
+    .select('user_id')
+    .eq('id', storyId)
+    .single()
+
+  if (storyError || !story) throw new Error('Story not found')
+
+  // Find or create conversation between user and story owner
+  const { data: existingParticipation } = await supabase
+    .from('conversation_participants')
+    .select('conversation_id')
+    .eq('user_id', user.id)
+
+  let conversationId: string | null = null
+
+  if (existingParticipation) {
+    for (const p of existingParticipation) {
+      const { data: otherParticipant } = await supabase
+        .from('conversation_participants')
+        .select('user_id')
+        .eq('conversation_id', p.conversation_id)
+        .neq('user_id', user.id)
+        .maybeSingle()
+
+      if (otherParticipant?.user_id === story.user_id) {
+        conversationId = p.conversation_id
+        break
+      }
+    }
+  }
+
+  if (!conversationId) {
+    const { data: newConversation, error: convError } = await supabase
+      .from('conversations')
+      .insert({})
+      .select('id')
+      .single()
+
+    if (convError || !newConversation) throw new Error('Failed to create conversation')
+    conversationId = newConversation.id
+
+    await supabase.from('conversation_participants').insert([
+      { conversation_id: conversationId, user_id: user.id },
+      { conversation_id: conversationId, user_id: story.user_id },
+    ])
+  }
+
+  // Send the reply message
+  const { error: msgError } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content: `Replied to your story: "${message}"`,
+    })
+
+  if (msgError) throw msgError
+
+  return { conversationId }
 }
