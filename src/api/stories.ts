@@ -7,7 +7,7 @@ export async function fetchStories() {
 
   const { data, error } = await supabase
     .from('stories')
-    .select('*, user:profiles(id, name, username, avatar)')
+    .select('*, user:profiles!stories_user_id_fkey(id, name, username, avatar)')
     .gte('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
 
@@ -71,7 +71,7 @@ export async function createStoryFromDraft(draft: StoryDraft): Promise<Story> {
   const { data, error } = await supabase
     .from('stories')
     .insert(insertData)
-    .select('*, user:profiles(id, name, username, avatar)')
+    .select('*, user:profiles!stories_user_id_fkey(id, name, username, avatar)')
     .single()
 
   if (error) {
@@ -142,7 +142,7 @@ export async function markStoryViewed(storyId: string) {
 export async function fetchStoryViews(storyId: string) {
   const { data, error } = await supabase
     .from('story_views')
-    .select('user:profiles(id, name, username, avatar), viewed_at')
+    .select('user:profiles!story_views_user_id_fkey(id, name, username, avatar), viewed_at')
     .eq('story_id', storyId)
     .order('viewed_at', { ascending: false })
 
@@ -157,7 +157,7 @@ export async function fetchStoryViews(storyId: string) {
 export async function fetchStoryReactions(storyId: string) {
   const { data, error } = await supabase
     .from('story_reactions')
-    .select('emoji, user:profiles(id, name, username, avatar)')
+    .select('emoji, user:profiles!story_reactions_user_id_fkey(id, name, username, avatar)')
     .eq('story_id', storyId)
 
   if (error) throw error

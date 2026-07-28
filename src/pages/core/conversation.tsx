@@ -40,7 +40,7 @@ export default function ConversationPage() {
     const loadParticipant = async () => {
       const { data, error } = await supabase
         .from('conversation_participants')
-        .select('user:profiles(name, username, avatar)')
+        .select('user:profiles!conversation_participants_user_id_fkey(name, username, avatar)')
         .eq('conversation_id', conversationId)
         .neq('user_id', user?.id || '')
         .limit(1)

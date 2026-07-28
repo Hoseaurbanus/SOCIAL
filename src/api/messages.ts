@@ -33,7 +33,7 @@ export async function fetchConversations() {
   for (const conv of conversations || []) {
     const { data: participants } = await supabase
       .from('conversation_participants')
-      .select('user:profiles(id, name, username, avatar)')
+      .select('user:profiles!conversation_participants_user_id_fkey(id, name, username, avatar)')
       .eq('conversation_id', conv.id)
       .neq('user_id', user.id)
 

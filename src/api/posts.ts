@@ -7,7 +7,7 @@ export async function fetchFeedPosts(page = 1, pageSize = 20) {
 
   const { data, error, count } = await supabase
     .from('posts')
-    .select('*, user:profiles(id, name, username, avatar)', { count: 'exact' })
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -26,7 +26,7 @@ export async function fetchPostsByUser(userId: string, page = 1, pageSize = 20) 
 
   const { data, error, count } = await supabase
     .from('posts')
-    .select('*, user:profiles(id, name, username, avatar)', { count: 'exact' })
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)', { count: 'exact' })
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .range(from, to)
@@ -57,7 +57,7 @@ export async function fetchFollowingPosts(page = 1, pageSize = 20) {
 
   const { data, error, count } = await supabase
     .from('posts')
-    .select('*, user:profiles(id, name, username, avatar)', { count: 'exact' })
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)', { count: 'exact' })
     .in('user_id', followingIds)
     .order('created_at', { ascending: false })
     .range(from, to)
@@ -81,7 +81,7 @@ export async function createPost(content: string, images?: string[], videoUrl?: 
   const { data, error } = await supabase
     .from('posts')
     .insert(insertData)
-    .select('*, user:profiles(id, name, username, avatar)')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)')
     .single()
 
   if (error) throw error
@@ -138,7 +138,7 @@ export async function toggleBookmark(postId: string) {
 export async function fetchPostComments(postId: string) {
   const { data, error } = await supabase
     .from('comments')
-    .select('*, user:profiles(id, name, username, avatar)')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
 
@@ -156,7 +156,7 @@ export async function addComment(postId: string, content: string) {
   const { data, error } = await supabase
     .from('comments')
     .insert({ post_id: postId, user_id: user.id, content })
-    .select('*, user:profiles(id, name, username, avatar)')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)')
     .single()
 
   if (error) throw error
@@ -211,7 +211,7 @@ export async function fetchLikedPosts(userId: string) {
 
   const { data, error } = await supabase
     .from('posts')
-    .select('*, user:profiles(id, name, username, avatar)')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)')
     .in('id', postIds)
 
   if (error) throw error
@@ -232,7 +232,7 @@ export async function fetchBookmarkedPosts(userId: string) {
 
   const { data, error } = await supabase
     .from('posts')
-    .select('*, user:profiles(id, name, username, avatar)')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)')
     .in('id', postIds)
 
   if (error) throw error
@@ -242,7 +242,7 @@ export async function fetchBookmarkedPosts(userId: string) {
 export async function fetchUserReplies(userId: string) {
   const { data, error } = await supabase
     .from('comments')
-    .select('*, commenter:profiles!comments_user_id_fkey(id, name, username, avatar), post:posts(id, content, user_id, user:profiles(id, name, username, avatar))')
+    .select('*, commenter:profiles!comments_user_id_fkey(id, name, username, avatar), post:posts(id, content, user_id, user:profiles!posts_user_id_fkey(id, name, username, avatar))')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -259,7 +259,7 @@ export async function fetchTrendingPosts(page = 1, pageSize = 20) {
 
   const { data, error, count } = await supabase
     .from('posts')
-    .select('*, user:profiles(id, name, username, avatar)', { count: 'exact' })
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)', { count: 'exact' })
     .order('likes_count', { ascending: false })
     .order('created_at', { ascending: false })
     .range(from, to)

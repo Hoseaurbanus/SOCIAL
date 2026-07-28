@@ -7,7 +7,7 @@ export async function fetchTrendingPosts(page = 1, pageSize = 20) {
 
   const { data, error } = await supabase
     .from('posts')
-    .select('*, user:profiles(id, name, username, avatar)')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)')
     .order('likes_count', { ascending: false })
     .order('created_at', { ascending: false })
     .range(from, to)
