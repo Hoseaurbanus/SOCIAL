@@ -51,7 +51,7 @@ export async function fetchTrendingTopics() {
   const counts: Record<string, number> = {}
   data?.forEach((post) => {
     const matches = post.content.match(hashtagRegex)
-    matches?.forEach((tag) => {
+    matches?.forEach((tag: string) => {
       const lower = tag.toLowerCase()
       counts[lower] = (counts[lower] || 0) + 1
     })

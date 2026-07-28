@@ -5,6 +5,7 @@ import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
 import { useMessages, useSendMessage, useMarkAsRead, useRealtimeMessages } from '@/hooks/use-messages'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/config/supabase'
 import type { Message } from '@/types/api'
 

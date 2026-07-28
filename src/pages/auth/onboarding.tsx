@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { cn } from '@/lib/utils'
-import { useUpdateProfile, useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
+import { useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/config/supabase'
-import { useToast } from '@/hooks/use-toast'
 
 const INTERESTS = [
   'Technology', 'Design', 'Photography', 'Music', 'Sports', 'Travel',
@@ -147,41 +146,14 @@ function FollowStep() {
 
 function ProfileStep() {
   const [bio, setBio] = useState('')
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const updateProfile = useUpdateProfile()
   const user = useAuthStore((s) => s.user)
-  const { toast } = useToast()
 
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setAvatarFile(file)
       setAvatarPreview(URL.createObjectURL(file))
-    }
-  }
-
-  const handleSave = async () => {
-    setUploading(true)
-    try {
-      let avatarUrl = user?.avatar
-      if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop()
-        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
-        const filePath = `avatars/${fileName}`
-        const { error } = await supabase.storage.from('avatars').upload(filePath, avatarFile)
-        if (error) throw error
-        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-        avatarUrl = urlData.publicUrl
-      }
-      await updateProfile.mutateAsync({ bio, avatar: avatarUrl })
-      toast({ title: 'Profile updated!', variant: 'success' })
-    } catch (err: any) {
-      toast({ title: err.message || 'Failed to update profile', variant: 'error' })
-    } finally {
-      setUploading(false)
     }
   }
 

@@ -23,7 +23,6 @@ const tabs = [
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('for-you')
   const [showCompose, setShowCompose] = useState(false)
-  const [showStoryViewer, setShowStoryViewer] = useState<string | null>(null)
   const user = useAuthStore((s) => s.user)
   const feedQuery = useFeedPosts()
   const followingQuery = useFollowingPosts()
@@ -144,7 +143,7 @@ export default function HomePage() {
       {/* Stories */}
       <Stories
         stories={stories.map((s) => ({ id: s.id, username: s.user.username, avatar: s.user.avatar, seen: false }))}
-        onStoryClick={(id) => setShowStoryViewer(id)}
+        onStoryClick={() => {}}
         onAddStory={async () => {
           const input = document.createElement('input')
           input.type = 'file'

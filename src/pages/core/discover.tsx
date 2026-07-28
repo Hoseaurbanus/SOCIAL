@@ -20,8 +20,6 @@ const tabs = [
 
 export default function DiscoverPage() {
   const [activeTab, setActiveTab] = useState('discover')
-  const { toast } = useToast()
-  const currentUser = useAuthStore((s) => s.user)
 
   return (
     <div className="max-w-[600px] mx-auto">
@@ -57,9 +55,8 @@ function DiscoverTab() {
   const { data: postsData, isLoading, error } = useTrendingPosts()
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
-  const { toast } = useToast()
   const currentUser = useAuthStore((s) => s.user)
-  const posts = postsData?.pages.flatMap((p) => p.posts) || []
+  const posts = postsData?.pages.flatMap((p) => p) || []
   const postIds = posts.map((p) => p.id)
   const { data: likedMap } = useLikeStatus(postIds)
   const { data: bookmarkedMap } = useBookmarkStatus(postIds)
@@ -125,7 +122,7 @@ function TrendingTab() {
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
   const currentUser = useAuthStore((s) => s.user)
-  const posts = postsData?.pages.flatMap((p) => p.posts) || []
+  const posts = postsData?.pages.flatMap((p) => p) || []
   const postIds = posts.map((p) => p.id)
   const { data: likedMap } = useLikeStatus(postIds)
   const { data: bookmarkedMap } = useBookmarkStatus(postIds)
@@ -198,7 +195,6 @@ function PeopleTab() {
   const { data: users, isLoading } = useSuggestedUsers()
   const toggleFollow = useToggleFollow()
   const { data: followingMap } = useFollowStatus(users?.map((u) => u.id) || [])
-  const { toast } = useToast()
 
   if (isLoading) {
     return (
