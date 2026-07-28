@@ -2,10 +2,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router'
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { useAuthStore } from '@/stores/auth-store'
 import { useState, useEffect } from 'react'
+import { SmugflexLogo } from '@/components/atoms/smugflex-logo'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -59,58 +60,145 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="flex justify-center mb-4">
-          <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center">
-            <span className="text-xl font-bold text-text-inverse">S</span>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left side - Brand */}
+      <div className="lg:w-1/2 bg-gradient-to-br from-accent via-accent-hover to-accent-dark flex flex-col items-center justify-center p-8 lg:p-16 relative overflow-hidden">
+        <div className="absolute top-20 left-10 h-64 w-64 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 h-48 w-48 bg-white/5 rounded-full blur-3xl" />
+
+        <div className="relative z-10 text-center lg:text-left max-w-md">
+          <div className="hidden lg:block">
+            <h1 className="text-4xl font-bold text-white mb-4">
+              Welcome back to <span className="text-secondary">SMUGFLEX</span>
+            </h1>
+            <p className="text-lg text-white/80 mb-8">
+              Your digital ecosystem for meaningful connections and knowledge sharing.
+            </p>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-secondary" />
+                </div>
+                <p className="text-sm text-white/80">End-to-end encrypted messaging</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
+                  <Lock className="h-5 w-5 text-secondary" />
+                </div>
+                <p className="text-sm text-white/80">Your data is never sold or shared</p>
+              </div>
+            </div>
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-text-primary">Welcome back</h1>
-        <p className="text-text-secondary">Sign in to your account</p>
       </div>
-      {error && (
-        <div className="p-3 rounded-lg bg-error-light text-error text-sm" role="alert">
-          {error}
-        </div>
-      )}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <label htmlFor="login-email" className="block text-sm font-medium text-text-primary mb-1">Email</label>
+
+      {/* Right side - Form */}
+      <div className="lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-16">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="text-center lg:text-left">
+            <div className="flex justify-center lg:justify-start mb-6 lg:hidden">
+              <SmugflexLogo size="md" variant="full" />
+            </div>
+            <h2 className="text-3xl font-bold text-text-primary mb-2">Welcome back</h2>
+            <p className="text-text-secondary">Sign in to your account</p>
+          </div>
+
+          {error && (
+            <div className="p-4 rounded-2xl bg-error-light border border-error/20 flex items-start gap-3" role="alert">
+              <div className="h-5 w-5 rounded-full bg-error/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-xs font-bold text-error">!</span>
+              </div>
+              <p className="text-sm text-error">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label htmlFor="login-email" className="block text-sm font-medium text-text-primary mb-2">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
+                <input
+                  id="login-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className="w-full h-12 pl-11 pr-4 rounded-2xl border-2 border-border bg-bg-primary text-text-primary text-base placeholder:text-text-tertiary focus:border-accent focus:ring-0 transition-colors"
+                  {...register('email')}
+                  autoComplete="email"
+                  aria-describedby={errors.email ? 'login-email-error' : undefined}
+                />
+              </div>
+              {errors.email && <p id="login-email-error" className="mt-2 text-sm text-error">{errors.email.message}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="login-password" className="block text-sm font-medium text-text-primary mb-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  className="w-full h-12 pl-11 pr-12 rounded-2xl border-2 border-border bg-bg-primary text-text-primary text-base placeholder:text-text-tertiary focus:border-accent focus:ring-0 transition-colors"
+                  {...register('password')}
+                  autoComplete="current-password"
+                  aria-describedby={errors.password ? 'login-password-error' : undefined}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && <p id="login-password-error" className="mt-2 text-sm text-error">{errors.password.message}</p>}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="h-4 w-4 rounded border-border text-accent focus:ring-accent" />
+                <span className="text-sm text-text-secondary">Remember me</span>
+              </label>
+              <Link to="/forgot-password" className="text-sm font-medium text-accent hover:text-accent-hover transition-colors">
+                Forgot password?
+              </Link>
+            </div>
+
+            <Button type="submit" fullWidth loading={isSubmitting} className="h-14 text-base font-semibold rounded-2xl shadow-lg shadow-accent/20">
+              Sign In
+            </Button>
+          </form>
+
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
-            <input id="login-email" type="email" placeholder="you@example.com" className="w-full h-10 pl-10 pr-4 rounded-lg border border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors" {...register('email')} autoComplete="email" aria-describedby={errors.email ? 'login-email-error' : undefined} />
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-bg-primary text-text-tertiary">or continue with</span>
+            </div>
           </div>
-          {errors.email && <p id="login-email-error" className="mt-1 text-sm text-error">{errors.email.message}</p>}
-        </div>
-        <div>
-          <label htmlFor="login-password" className="block text-sm font-medium text-text-primary mb-1">Password</label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
-            <input id="login-password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" className="w-full h-10 pl-10 pr-10 rounded-lg border border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors" {...register('password')} autoComplete="current-password" aria-describedby={errors.password ? 'login-password-error' : undefined} />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary" aria-label={showPassword ? 'Hide password' : 'Show password'}>
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+
+          <Button variant="secondary" fullWidth onClick={handleGoogle} loading={googleLoading} icon={<GoogleIcon />} className="h-12 rounded-2xl border-2 font-medium">
+            Continue with Google
+          </Button>
+
+          <div className="flex items-center gap-2 p-3 rounded-2xl bg-accent-light/50">
+            <Shield className="h-4 w-4 text-accent flex-shrink-0" />
+            <p className="text-xs text-text-secondary">
+              Your connection is encrypted and secure
+            </p>
           </div>
-          {errors.password && <p id="login-password-error" className="mt-1 text-sm text-error">{errors.password.message}</p>}
+
+          <p className="text-center text-sm text-text-secondary">
+            Don't have an account?{' '}
+            <Link to="/signup" className="font-semibold text-accent hover:text-accent-hover transition-colors">
+              Create one
+            </Link>
+          </p>
         </div>
-        <div className="text-right">
-          <Link to="/forgot-password" className="text-sm text-accent hover:text-accent-hover">Forgot password?</Link>
-        </div>
-        <Button type="submit" fullWidth loading={isSubmitting}>Sign In</Button>
-      </form>
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-        <div className="relative flex justify-center text-sm"><span className="bg-bg-primary px-2 text-text-tertiary">or</span></div>
       </div>
-      <div className="space-y-3">
-        <Button variant="secondary" fullWidth onClick={handleGoogle} loading={googleLoading} icon={<GoogleIcon />}>
-          Continue with Google
-        </Button>
-      </div>
-      <p className="text-center text-sm text-text-secondary">
-        Don't have an account? <Link to="/signup" className="text-accent hover:text-accent-hover font-medium">Create one</Link>
-      </p>
     </div>
   )
 }

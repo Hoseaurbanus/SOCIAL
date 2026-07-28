@@ -1,17 +1,15 @@
 import { Link } from 'react-router'
 import { Search, Bell, MessageCircle } from 'lucide-react'
 import { useUnreadCount } from '@/hooks/use-notifications'
+import { SmugflexLogo } from '@/components/atoms/smugflex-logo'
 
 export function Header() {
   const { data: notificationCount = 0 } = useUnreadCount()
   return (
     <header className="sticky top-0 z-header bg-bg-primary border-b border-border">
       <div className="flex items-center justify-between h-16 px-4 max-w-[1200px] mx-auto">
-        <Link to="/home" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center">
-            <span className="text-sm font-bold text-text-inverse">S</span>
-          </div>
-          <span className="text-lg font-bold text-text-primary hidden sm:block">SMUGFLEX</span>
+        <Link to="/home" className="flex items-center">
+          <SmugflexLogo size="sm" variant="full" />
         </Link>
 
         <div className="flex-1 max-w-md mx-4 hidden md:block">

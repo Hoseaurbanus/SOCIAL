@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { ShieldCheck, Mail, Phone, ArrowLeft } from 'lucide-react'
+import { ShieldCheck, Mail, Phone, ArrowLeft, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { useAuthStore } from '@/stores/auth-store'
+import { SmugflexLogo } from '@/components/atoms/smugflex-logo'
 
 export default function VerifyPage() {
   const navigate = useNavigate()
@@ -79,7 +80,6 @@ export default function VerifyPage() {
       setCode(['', '', '', '', '', ''])
       inputRefs.current[0]?.focus()
     } else {
-      // After verification, go to create password page
       navigate('/create-password')
     }
   }, [code, identifier, type, verifyOtp, navigate])
@@ -108,90 +108,133 @@ export default function VerifyPage() {
     : identifier.replace(/(\+\d{1,2})\d+(\d{4})/, '$1****$2')
 
   return (
-    <div className="space-y-6">
-      <div>
-        <button
-          type="button"
-          onClick={() => navigate('/signup')}
-          className="flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary transition-colors mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to sign up
-        </button>
-        <div className="flex justify-center mb-4">
-          <div className="h-16 w-16 rounded-full bg-accent/10 flex items-center justify-center">
-            <ShieldCheck className="h-8 w-8 text-accent" />
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left side - Brand */}
+      <div className="lg:w-1/2 bg-gradient-to-br from-accent via-accent-hover to-accent-dark flex flex-col items-center justify-center p-8 lg:p-16 relative overflow-hidden">
+        <div className="absolute top-20 left-10 h-64 w-64 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 h-48 w-48 bg-white/5 rounded-full blur-3xl" />
+
+        <div className="relative z-10 text-center lg:text-left max-w-md">
+          <div className="hidden lg:block">
+            <h1 className="text-4xl font-bold text-white mb-4">
+              Almost <span className="text-secondary">there</span>
+            </h1>
+            <p className="text-lg text-white/80 mb-8">
+              Verify your identity to secure your account and get started.
+            </p>
+
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
+                <ShieldCheck className="h-5 w-5 text-secondary" />
+              </div>
+              <p className="text-sm text-white/80">Two-factor verification keeps your account safe</p>
+            </div>
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-text-primary text-center">Verify your {type}</h1>
-        <p className="text-text-secondary text-center mt-2">
-          Enter the 6-digit code we sent to
-        </p>
-        <p className="text-text-primary font-medium text-center mt-1 flex items-center justify-center gap-2">
-          {isEmail ? <Mail className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
-          {maskedIdentifier}
-        </p>
       </div>
 
-      {error && (
-        <div className="p-3 rounded-lg bg-error-light text-error text-sm text-center" role="alert">
-          {error}
-        </div>
-      )}
+      {/* Right side - Form */}
+      <div className="lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-16">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="text-center lg:text-left">
+            <div className="flex justify-center lg:justify-start mb-6 lg:hidden">
+              <SmugflexLogo size="md" variant="full" />
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/signup')}
+              className="flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary transition-colors mb-6"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to sign up
+            </button>
 
-      {/* OTP Input */}
-      <div className="flex justify-center gap-3">
-        {code.map((digit, index) => (
-          <input
-            key={index}
-            ref={(el) => { inputRefs.current[index] = el }}
-            type="text"
-            inputMode="numeric"
-            maxLength={1}
-            value={digit}
-            onChange={(e) => handleChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            onPaste={handlePaste}
-            className="w-12 h-14 text-center text-xl font-bold rounded-xl border bg-bg-primary text-text-primary focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all outline-none"
-            aria-label={`Digit ${index + 1}`}
-            autoFocus={index === 0}
-          />
-        ))}
-      </div>
+            <div className="flex justify-center lg:justify-start mb-6">
+              <div className="h-16 w-16 rounded-3xl bg-accent/10 flex items-center justify-center">
+                <ShieldCheck className="h-8 w-8 text-accent" />
+              </div>
+            </div>
 
-      <p className="text-sm text-text-secondary text-center">
-        After verification, you'll create your password
-      </p>
+            <h2 className="text-3xl font-bold text-text-primary mb-2">
+              Verify your {type}
+            </h2>
+            <p className="text-text-secondary">
+              Enter the 6-digit code we sent to
+            </p>
+            <p className="text-text-primary font-semibold mt-1 flex items-center justify-center lg:justify-start gap-2">
+              {isEmail ? <Mail className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
+              {maskedIdentifier}
+            </p>
+          </div>
 
-      <Button
-        fullWidth
-        size="lg"
-        loading={isVerifying}
-        onClick={handleVerify}
-        disabled={code.some((c) => !c)}
-      >
-        Verify & Continue
-      </Button>
+          {error && (
+            <div className="p-4 rounded-2xl bg-error-light border border-error/20 flex items-start gap-3" role="alert">
+              <div className="h-5 w-5 rounded-full bg-error/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-xs font-bold text-error">!</span>
+              </div>
+              <p className="text-sm text-error">{error}</p>
+            </div>
+          )}
 
-      <div className="text-center">
-        {canResend ? (
-          <button
-            type="button"
-            onClick={handleResend}
-            className="text-sm text-accent hover:text-accent-hover font-medium"
-          >
-            Resend code
-          </button>
-        ) : (
-          <p className="text-sm text-text-tertiary">
-            Resend code in {resendTimer}s
+          {/* OTP Input */}
+          <div className="flex justify-center gap-3">
+            {code.map((digit, index) => (
+              <input
+                key={index}
+                ref={(el) => { inputRefs.current[index] = el }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={handlePaste}
+                className="w-12 h-14 text-center text-xl font-bold rounded-2xl border-2 border-border bg-bg-primary text-text-primary focus:border-accent focus:ring-0 transition-all outline-none"
+                aria-label={`Digit ${index + 1}`}
+                autoFocus={index === 0}
+              />
+            ))}
+          </div>
+
+          <p className="text-sm text-text-secondary text-center">
+            After verification, you'll create your password
           </p>
-        )}
-      </div>
 
-      <p className="text-center text-sm text-text-secondary">
-        <Link to="/login" className="text-accent hover:text-accent-hover font-medium">Back to Sign In</Link>
-      </p>
+          <Button
+            fullWidth
+            size="lg"
+            loading={isVerifying}
+            onClick={handleVerify}
+            disabled={code.some((c) => !c)}
+            className="h-14 text-base font-semibold rounded-2xl shadow-lg shadow-accent/20"
+          >
+            Verify & Continue
+          </Button>
+
+          <div className="text-center">
+            {canResend ? (
+              <button
+                type="button"
+                onClick={handleResend}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Resend code
+              </button>
+            ) : (
+              <p className="text-sm text-text-tertiary">
+                Resend code in {resendTimer}s
+              </p>
+            )}
+          </div>
+
+          <p className="text-center text-sm text-text-secondary">
+            <Link to="/login" className="font-semibold text-accent hover:text-accent-hover transition-colors">
+              Back to Sign In
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
