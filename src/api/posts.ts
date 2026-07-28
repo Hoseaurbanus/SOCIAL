@@ -173,3 +173,56 @@ export async function checkBookmarkStatus(postIds: string[]) {
   data?.forEach((b) => { bookmarked[b.post_id] = true })
   return bookmarked
 }
+
+export async function fetchLikedPosts(userId: string) {
+  const { data: likes, error: likesError } = await supabase
+    .from('likes')
+    .select('post_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (likesError) throw likesError
+  if (!likes?.length) return []
+
+  const postIds = likes.map((l) => l.post_id)
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*, user:profiles(id, name, username, avatar)')
+    .in('id', postIds)
+
+  if (error) throw error
+  return (data || []) as Post[]
+}
+
+export async function fetchBookmarkedPosts(userId: string) {
+  const { data: bookmarks, error: bookmarksError } = await supabase
+    .from('bookmarks')
+    .select('post_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (bookmarksError) throw bookmarksError
+  if (!bookmarks?.length) return []
+
+  const postIds = bookmarks.map((b) => b.post_id)
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*, user:profiles(id, name, username, avatar)')
+    .in('id', postIds)
+
+  if (error) throw error
+  return (data || []) as Post[]
+}
+
+export async function fetchUserReplies(userId: string) {
+  const { data, error } = await supabase
+    .from('comments')
+    .select('*, post:posts(id, content, user_id, user:profiles(id, name, username, avatar))')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return (data || []) as any[]
+}

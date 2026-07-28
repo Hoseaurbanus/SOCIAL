@@ -5,7 +5,7 @@ import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { PostCard } from '@/components/molecules/post-card'
 import { useProfile, useFollowCounts, useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
-import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
+import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost, useLikedPosts, useBookmarkedPosts, useUserReplies } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
 
@@ -29,6 +29,10 @@ export default function ProfilePage() {
   const { data: likedMap } = useLikeStatus(postIds)
   const { data: bookmarkedMap } = useBookmarkStatus(postIds)
   const isOwnProfile = currentUser?.username === username || (!username && currentUser?.username)
+
+  const { data: likedPosts, isLoading: likedLoading } = useLikedPosts(profile?.id || '')
+  const { data: bookmarkedPosts, isLoading: bookmarkedLoading } = useBookmarkedPosts(profile?.id || '')
+  const { data: replies, isLoading: repliesLoading } = useUserReplies(profile?.id || '')
 
   if (profileLoading) {
     return (
@@ -147,31 +151,27 @@ export default function ProfilePage() {
 
       {/* Tab Content */}
       <div className="divide-y divide-border">
-        {postsError ? (
-          <div className="p-8 text-center">
-            <p className="text-text-secondary mb-2">Failed to load posts.</p>
-            <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
-              Try again
-            </Button>
-          </div>
-        ) : postsLoading ? (
-          [1, 2, 3].map((i) => (
-            <div key={i} className="p-4 animate-pulse space-y-3">
-              <div className="flex gap-3">
-                <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-32 bg-bg-tertiary rounded" />
-                  <div className="h-3 w-48 bg-bg-tertiary rounded" />
+        {activeTab === 'posts' && (
+          postsLoading ? (
+            [1, 2, 3].map((i) => (
+              <div key={i} className="p-4 animate-pulse space-y-3">
+                <div className="flex gap-3">
+                  <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-bg-tertiary rounded" />
+                    <div className="h-3 w-48 bg-bg-tertiary rounded" />
+                  </div>
                 </div>
+                <div className="h-16 bg-bg-tertiary rounded" />
               </div>
-              <div className="h-16 bg-bg-tertiary rounded" />
-            </div>
-          ))
-        ) : activeTab === 'posts' ? (
-          posts.length === 0 ? (
+            ))
+          ) : postsError ? (
             <div className="p-8 text-center">
-              <p className="text-text-secondary">No posts yet</p>
+              <p className="text-text-secondary mb-2">Failed to load posts.</p>
+              <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>Try again</Button>
             </div>
+          ) : posts.length === 0 ? (
+            <div className="p-8 text-center"><p className="text-text-secondary">No posts yet</p></div>
           ) : (
             posts.map((post) => (
               <PostCard
@@ -192,10 +192,118 @@ export default function ProfilePage() {
               />
             ))
           )
-        ) : (
-          <div className="p-8 text-center">
-            <p className="text-text-secondary">No {activeTab} yet</p>
-          </div>
+        )}
+
+        {activeTab === 'replies' && (
+          repliesLoading ? (
+            [1, 2, 3].map((i) => (
+              <div key={i} className="p-4 animate-pulse space-y-3">
+                <div className="flex gap-3">
+                  <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-bg-tertiary rounded" />
+                    <div className="h-3 w-48 bg-bg-tertiary rounded" />
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : replies && replies.length > 0 ? (
+            replies.map((reply: any) => (
+              <div key={reply.id} className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Avatar src={reply.user?.avatar} alt={reply.user?.name} size="sm" />
+                  <div>
+                    <span className="text-sm font-medium text-text-primary">{reply.user?.name}</span>
+                    <span className="text-sm text-text-secondary ml-2">@{reply.user?.username}</span>
+                  </div>
+                  <span className="text-xs text-text-tertiary ml-auto">{new Date(reply.created_at).toLocaleDateString()}</span>
+                </div>
+                <p className="text-sm text-text-primary mb-2">{reply.content}</p>
+                {reply.post && (
+                  <div className="pl-4 border-l-2 border-border">
+                    <p className="text-sm text-text-tertiary">Replying to {reply.post.user?.name}</p>
+                    <p className="text-sm text-text-secondary line-clamp-2">{reply.post.content}</p>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="p-8 text-center"><p className="text-text-secondary">No replies yet</p></div>
+          )
+        )}
+
+        {activeTab === 'likes' && (
+          likedLoading ? (
+            [1, 2, 3].map((i) => (
+              <div key={i} className="p-4 animate-pulse space-y-3">
+                <div className="flex gap-3">
+                  <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-bg-tertiary rounded" />
+                    <div className="h-3 w-48 bg-bg-tertiary rounded" />
+                  </div>
+                </div>
+                <div className="h-16 bg-bg-tertiary rounded" />
+              </div>
+            ))
+          ) : likedPosts && likedPosts.length > 0 ? (
+            likedPosts.map((post) => (
+              <PostCard
+                key={post.id}
+                postId={post.id}
+                isOwnPost={post.user_id === currentUser?.id}
+                author={post.user}
+                content={post.content}
+                images={post.images}
+                timestamp={post.created_at}
+                likes={post.likes_count}
+                comments={post.comments_count}
+                liked={true}
+                saved={!!bookmarkedMap?.[post.id]}
+                onLike={() => toggleLike.mutate(post.id)}
+                onSave={() => toggleBookmark.mutate(post.id)}
+              />
+            ))
+          ) : (
+            <div className="p-8 text-center"><p className="text-text-secondary">No likes yet</p></div>
+          )
+        )}
+
+        {activeTab === 'bookmarks' && (
+          bookmarkedLoading ? (
+            [1, 2, 3].map((i) => (
+              <div key={i} className="p-4 animate-pulse space-y-3">
+                <div className="flex gap-3">
+                  <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-bg-tertiary rounded" />
+                    <div className="h-3 w-48 bg-bg-tertiary rounded" />
+                  </div>
+                </div>
+                <div className="h-16 bg-bg-tertiary rounded" />
+              </div>
+            ))
+          ) : bookmarkedPosts && bookmarkedPosts.length > 0 ? (
+            bookmarkedPosts.map((post) => (
+              <PostCard
+                key={post.id}
+                postId={post.id}
+                isOwnPost={post.user_id === currentUser?.id}
+                author={post.user}
+                content={post.content}
+                images={post.images}
+                timestamp={post.created_at}
+                likes={post.likes_count}
+                comments={post.comments_count}
+                liked={!!likedMap?.[post.id]}
+                saved={true}
+                onLike={() => toggleLike.mutate(post.id)}
+                onSave={() => toggleBookmark.mutate(post.id)}
+              />
+            ))
+          ) : (
+            <div className="p-8 text-center"><p className="text-text-secondary">No bookmarks yet</p></div>
+          )
         )}
       </div>
     </div>
