@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { LayoutGrid, Users, Grid3X3, Clock, Zap } from 'lucide-react'
+import { LayoutGrid, Users, Grid3X3, Clock, Zap, RefreshCw } from 'lucide-react'
 import { PostCard } from '@/components/molecules/post-card'
 import { Stories } from '@/components/molecules/stories'
 import { Button } from '@/components/atoms/button'
@@ -33,6 +33,10 @@ export default function HomePage() {
   const toast = useToast((s) => s.toast)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const startY = useRef(0)
+  const [pullDistance, setPullDistance] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const posts = data?.pages.flatMap((p) => p.posts) || []
   const postIds = posts.map((p) => p.id)
@@ -50,6 +54,30 @@ export default function HomePage() {
       onError: () => toast({ title: 'Something went wrong', variant: 'error' }),
     })
   }, [toggleBookmark, toast])
+
+  const refetch = activeQuery.refetch
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0) {
+      startY.current = e.touches[0].clientY
+    }
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (startY.current === 0) return
+    const diff = e.touches[0].clientY - startY.current
+    if (diff > 0) setPullDistance(Math.min(diff * 0.5, 80))
+  }, [])
+
+  const handleTouchEnd = useCallback(async () => {
+    if (pullDistance > 50) {
+      setIsRefreshing(true)
+      await refetch()
+      setIsRefreshing(false)
+    }
+    setPullDistance(0)
+    startY.current = 0
+  }, [pullDistance, refetch])
 
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) return
@@ -71,7 +99,24 @@ export default function HomePage() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
-    <div>
+    <div
+      ref={containerRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull to refresh indicator */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div
+          className="flex items-center justify-center overflow-hidden transition-all"
+          style={{ height: isRefreshing ? 48 : pullDistance }}
+        >
+          <RefreshCw
+            className={`h-5 w-5 text-accent ${isRefreshing ? 'animate-spin' : ''}`}
+            style={{ transform: isRefreshing ? undefined : `rotate(${pullDistance * 3}deg)` }}
+          />
+        </div>
+      )}
       {/* Feed Tabs */}
       <div className="flex gap-1 overflow-x-auto border-b border-border scrollbar-none sticky top-16 bg-bg-primary z-10">
         {tabs.map((tab) => (
