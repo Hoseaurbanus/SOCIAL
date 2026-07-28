@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { LayoutGrid, Users, Grid3X3, Clock, Zap, RefreshCw } from 'lucide-react'
 import { PostCard } from '@/components/molecules/post-card'
 import { Stories } from '@/components/molecules/stories'
@@ -139,6 +140,7 @@ export default function HomePage() {
           />
         </div>
       )}
+
       {/* Feed Tabs */}
       <div className="relative border-b border-border sticky top-16 bg-bg-primary z-10">
         <div className="flex gap-1 overflow-x-auto scrollbar-none px-2" role="tablist" aria-label="Feed filters">
@@ -163,7 +165,7 @@ export default function HomePage() {
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-bg-primary to-transparent pointer-events-none md:hidden" />
       </div>
 
-      {/* Stories */}
+      {/* Stories — Vertical Story Deck */}
       <Stories
         stories={stories}
         onStoryClick={(id) => {
@@ -174,6 +176,9 @@ export default function HomePage() {
         currentUserId={user?.id}
         onAddStory={() => setShowStoryCreator(true)}
       />
+
+      {/* Divider */}
+      <div className="h-2 bg-bg-secondary" />
 
       {/* Create Post */}
       <div className="p-4 border-b border-border">
@@ -257,29 +262,37 @@ export default function HomePage() {
       )}
 
       <ComposeModal isOpen={showCompose} onClose={() => setShowCompose(false)} />
-      <StoryCreator
-        isOpen={showStoryCreator}
-        onClose={() => setShowStoryCreator(false)}
-        onPost={async (draft: StoryDraft) => {
-          await createStory.mutateAsync(draft)
-          toast({ title: 'Story posted!', variant: 'success' })
-        }}
-      />
-      {viewingStoryIndex !== null && (
-        <StoryViewer
-          stories={stories}
-          initialIndex={viewingStoryIndex}
-          onClose={() => setViewingStoryIndex(null)}
-          onReply={async (storyId, message) => {
-            try {
-              await replyToStory.mutateAsync({ storyId, message })
-              toast({ title: 'Reply sent!', variant: 'success' })
-            } catch {
-              toast({ title: 'Failed to send reply', variant: 'error' })
-            }
-          }}
-        />
-      )}
+
+      <AnimatePresence>
+        {showStoryCreator && (
+          <StoryCreator
+            isOpen={showStoryCreator}
+            onClose={() => setShowStoryCreator(false)}
+            onPost={async (draft: StoryDraft) => {
+              await createStory.mutateAsync(draft)
+              toast({ title: 'Story posted!', variant: 'success' })
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {viewingStoryIndex !== null && (
+          <StoryViewer
+            stories={stories}
+            initialIndex={viewingStoryIndex}
+            onClose={() => setViewingStoryIndex(null)}
+            onReply={async (storyId, message) => {
+              try {
+                await replyToStory.mutateAsync({ storyId, message })
+                toast({ title: 'Reply sent!', variant: 'success' })
+              } catch {
+                toast({ title: 'Failed to send reply', variant: 'error' })
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { X, Type, Image, Music, Smile, Palette, ArrowLeft, Eye, Send, Trash2, Plus } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, Type, Image, Music, Smile, Palette, ArrowLeft, Eye, Send, Trash2, Plus, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { cn } from '@/lib/utils'
@@ -29,7 +30,7 @@ export interface StoryDraft {
   textOverlays?: TextOverlay[]
 }
 
-const tabs = [
+const toolGroups = [
   { id: 'text', label: 'Text', icon: Type },
   { id: 'upload', label: 'Upload', icon: Image },
   { id: 'music', label: 'Music', icon: Music },
@@ -38,7 +39,7 @@ const tabs = [
 ]
 
 export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
-  const [activeTab, setActiveTab] = useState('text')
+  const [activeTool, setActiveTool] = useState<string | null>(null)
   const [draft, setDraft] = useState<StoryDraft>({
     mode: 'text',
     textColor: '#FFFFFF',
@@ -49,13 +50,16 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
   const [showPreview, setShowPreview] = useState(false)
   const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null)
   const previewRef = useRef<HTMLDivElement>(null)
-  const dragStartRef = useRef<{ x: number; y: number; stickerX: number; stickerY: number } | null>(null)
   const user = useAuthStore((s) => s.user)
   const toast = useToast((s) => s.toast)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const draftKey = 'smugflex-story-draft'
 
-  // Persist draft across open/close
+  const updateDraft = useCallback((updates: Partial<StoryDraft>) => {
+    setDraft((prev) => ({ ...prev, ...updates }))
+  }, [])
+
+  // Draft persistence
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(draftKey)
@@ -73,10 +77,6 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
     } catch {}
   }, [draft])
 
-  const updateDraft = useCallback((updates: Partial<StoryDraft>) => {
-    setDraft((prev) => ({ ...prev, ...updates }))
-  }, [])
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -86,7 +86,7 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
       mediaFile: file,
       mediaPreview: URL.createObjectURL(file),
     })
-    setActiveTab('upload')
+    setActiveTool(null)
   }
 
   const handlePost = async () => {
@@ -112,34 +112,6 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
   }
 
   // Sticker drag handlers
-  const handleStickerTouchStart = useCallback((e: React.TouchEvent, sticker: StorySticker) => {
-    e.stopPropagation()
-    setSelectedStickerId(sticker.id)
-    const touch = e.touches[0]
-    dragStartRef.current = { x: touch.clientX, y: touch.clientY, stickerX: sticker.x, stickerY: sticker.y }
-  }, [])
-
-  const handleStickerTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!dragStartRef.current || !previewRef.current || !selectedStickerId) return
-    e.preventDefault()
-    const touch = e.touches[0]
-    const dx = touch.clientX - dragStartRef.current.x
-    const dy = touch.clientY - dragStartRef.current.y
-    const rect = previewRef.current.getBoundingClientRect()
-    const newX = Math.max(0, Math.min(100, dragStartRef.current.stickerX + (dx / rect.width) * 100))
-    const newY = Math.max(0, Math.min(100, dragStartRef.current.stickerY + (dy / rect.height) * 100))
-    updateDraft({
-      stickers: draft.stickers?.map((s) =>
-        s.id === selectedStickerId ? { ...s, x: newX, y: newY } : s
-      ),
-    })
-  }, [selectedStickerId, draft.stickers, updateDraft])
-
-  const handleStickerTouchEnd = useCallback(() => {
-    dragStartRef.current = null
-    setSelectedStickerId(null)
-  }, [])
-
   const handleStickerMouseDown = useCallback((e: React.MouseEvent, sticker: StorySticker) => {
     e.stopPropagation()
     setSelectedStickerId(sticker.id)
@@ -157,9 +129,7 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
       const newY = Math.max(0, Math.min(100, startStickerY + (dy / rect.height) * 100))
       setDraft((prev) => ({
         ...prev,
-        stickers: prev.stickers?.map((s) =>
-          s.id === sticker.id ? { ...s, x: newX, y: newY } : s
-        ),
+        stickers: prev.stickers?.map((s) => s.id === sticker.id ? { ...s, x: newX, y: newY } : s),
       }))
     }
 
@@ -173,159 +143,121 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
     document.addEventListener('mouseup', handleMouseUp)
   }, [])
 
-  const handleRemoveSticker = useCallback((stickerId: string) => {
-    updateDraft({ stickers: draft.stickers?.filter((s) => s.id !== stickerId) })
-    setSelectedStickerId(null)
-  }, [draft.stickers, updateDraft])
-
   if (!isOpen) return null
 
   if (showPreview) {
     return (
-      <StoryPreview
-        draft={draft}
-        user={user}
-        onClose={() => setShowPreview(false)}
-        onPost={handlePost}
-        posting={posting}
-      />
+      <StoryPreview draft={draft} user={user} onClose={() => setShowPreview(false)} onPost={handlePost} posting={posting} />
     )
   }
 
   return (
-    <div className="fixed inset-0 z-modal bg-bg-primary flex flex-col" role="dialog" aria-modal="true" aria-label="Create story">
+    <motion.div
+      className="fixed inset-0 z-modal bg-bg-primary flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Create story"
+      initial={{ opacity: 0, y: '100%' }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: '100%' }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <button onClick={onClose} className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary" aria-label="Close">
+      <motion.div
+        className="flex items-center justify-between px-4 py-3 border-b border-border"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15 }}
+      >
+        <motion.button onClick={onClose} className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary" whileTap={{ scale: 0.85 }} aria-label="Close">
           <X className="h-5 w-5" />
-        </button>
+        </motion.button>
         <h2 className="text-base font-semibold text-text-primary">New Story</h2>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowPreview(true)}
-            disabled={draft.mode === 'text' && !draft.backgroundImage}
-            aria-label="Preview"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setShowPreview(true)} disabled={draft.mode === 'text' && !draft.backgroundImage} aria-label="Preview">
             <Eye className="h-4 w-4 mr-1" />
             Preview
           </Button>
-          <Button
-            size="sm"
-            loading={posting}
-            onClick={handlePost}
-            disabled={posting || (draft.mode === 'text' && !draft.backgroundImage)}
-          >
+          <Button size="sm" loading={posting} onClick={handlePost} disabled={posting || (draft.mode === 'text' && !draft.backgroundImage)}>
             <Send className="h-4 w-4 mr-1" />
             Post
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Preview Area */}
       <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-        <div
+        <motion.div
           ref={previewRef}
-          className="relative w-full max-w-[360px] aspect-[9/16] rounded-2xl overflow-hidden flex items-center justify-center"
+          className="relative w-full max-w-[360px] aspect-[9/16] rounded-3xl overflow-hidden flex items-center justify-center shadow-2xl"
           style={getStyleForDraft(draft)}
-          onTouchMove={handleStickerTouchMove}
-          onTouchEnd={handleStickerTouchEnd}
+          initial={{ scale: 0.85, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 20, delay: 0.1 }}
         >
           {draft.mode === 'text' && draft.backgroundImage && (
-            <p
-              className={cn(
-                'text-center px-8 text-2xl font-bold whitespace-pre-wrap break-words',
-                getFontClass(draft.fontStyle)
-              )}
+            <motion.p
+              className={cn('text-center px-8 text-2xl font-bold whitespace-pre-wrap break-words', getFontClass(draft.fontStyle))}
               style={{ color: draft.textColor }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
             >
               {draft.content || 'Tap to add text'}
-            </p>
+            </motion.p>
           )}
           {draft.mode === 'text' && !draft.backgroundImage && (
-            <div className="text-center px-8 text-text-tertiary">
+            <div className="text-center px-8 text-white/40">
               <Type className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p className="text-sm">Select a background below</p>
             </div>
           )}
           {draft.mediaPreview && (
-            <img
-              src={draft.mediaPreview}
-              alt="Story preview"
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ filter: draft.filter }}
-            />
+            <img src={draft.mediaPreview} alt="Story preview" className="absolute inset-0 w-full h-full object-cover" style={{ filter: draft.filter }} />
           )}
           {draft.mediaPreview && draft.content && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <p
-                className={cn(
-                  'text-center px-8 text-2xl font-bold whitespace-pre-wrap break-words drop-shadow-lg',
-                  getFontClass(draft.fontStyle)
-                )}
-                style={{ color: draft.textColor }}
-              >
+              <p className={cn('text-center px-8 text-2xl font-bold whitespace-pre-wrap break-words drop-shadow-lg', getFontClass(draft.fontStyle))} style={{ color: draft.textColor }}>
                 {draft.content}
               </p>
             </div>
           )}
 
-          {/* Stickers in preview */}
-          {draft.stickers && draft.stickers.length > 0 && draft.stickers.map((s) => (
+          {/* Stickers */}
+          {draft.stickers && draft.stickers.map((s) => (
             <div
               key={s.id}
               className={cn(
                 'absolute text-4xl cursor-move select-none touch-none',
                 selectedStickerId === s.id && 'ring-2 ring-accent rounded-lg scale-110'
               )}
-              style={{
-                left: `${s.x}%`,
-                top: `${s.y}%`,
-                transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)`,
-              }}
+              style={{ left: `${s.x}%`, top: `${s.y}%`, transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` }}
               onMouseDown={(e) => handleStickerMouseDown(e, s)}
-              onTouchStart={(e) => handleStickerTouchStart(e, s)}
             >
               {s.content}
               {selectedStickerId === s.id && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleRemoveSticker(s.id) }}
-                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-error flex items-center justify-center"
-                  aria-label="Remove sticker"
-                >
+                <button onClick={(e) => { e.stopPropagation(); updateDraft({ stickers: draft.stickers?.filter((st) => st.id !== s.id) }) }} className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-error flex items-center justify-center" aria-label="Remove sticker">
                   <Trash2 className="h-3 w-3 text-white" />
                 </button>
               )}
             </div>
           ))}
 
-          {/* Music indicator */}
-          {draft.musicUrl && (
-            <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
-              <Music className="h-4 w-4 text-white" />
-              <span className="text-xs text-white truncate">{draft.musicTitle || 'Music'}</span>
-            </div>
-          )}
-
-          {/* Text overlays in preview */}
-          {draft.textOverlays && draft.textOverlays.map((overlay) => (
-            <div
-              key={overlay.id}
-              className="absolute pointer-events-none"
-              style={{
-                left: `${overlay.x}%`,
-                top: `${overlay.y}%`,
-                transform: 'translate(-50%, -50%)',
-                color: overlay.color,
-                fontSize: `${overlay.fontSize}px`,
-                fontWeight: overlay.fontWeight,
-              }}
-            >
-              {overlay.text}
+          {/* Text overlays */}
+          {draft.textOverlays && draft.textOverlays.map((o) => (
+            <div key={o.id} className="absolute pointer-events-none" style={{ left: `${o.x}%`, top: `${o.y}%`, transform: 'translate(-50%, -50%)', color: o.color, fontSize: `${o.fontSize}px`, fontWeight: o.fontWeight }}>
+              {o.text}
             </div>
           ))}
-        </div>
+
+          {/* Music indicator */}
+          {draft.musicUrl && (
+            <motion.div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-full px-4 py-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <Music className="h-4 w-4 text-white" />
+              <span className="text-xs text-white truncate">{draft.musicTitle || 'Music'}</span>
+            </motion.div>
+          )}
+        </motion.div>
       </div>
 
       {/* Content Input */}
@@ -342,75 +274,81 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
         <p className="text-xs text-text-tertiary text-right mt-1">{(draft.content || '').length}/200</p>
       </div>
 
-      {/* Tab Bar — filled pill style matching home feed */}
-      <div className="flex gap-1 px-2 py-2 border-t border-border">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
+      {/* Tool Bar — Bottom Sheet Trigger */}
+      <div className="px-4 pb-2">
+        <motion.button
+          onClick={() => setActiveTool(activeTool ? null : 'text')}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-bg-secondary border border-border text-sm text-text-secondary"
+          whileTap={{ scale: 0.97 }}
+        >
+          <ChevronUp className={cn('h-4 w-4 transition-transform', activeTool && 'rotate-180')} />
+          {activeTool ? 'Close tools' : 'Open tools'}
+        </motion.button>
+      </div>
+
+      {/* Tool Bar */}
+      <div className="flex gap-1 px-4 pb-2">
+        {toolGroups.map((tool) => (
+          <motion.button
+            key={tool.id}
             onClick={() => {
-              if (tab.id === 'upload') {
-                fileInputRef.current?.click()
-              } else {
-                setActiveTab(tab.id)
-              }
+              if (tool.id === 'upload') { fileInputRef.current?.click() }
+              else { setActiveTool(activeTool === tool.id ? null : tool.id) }
             }}
             className={cn(
-              'flex-1 flex flex-col items-center gap-1 py-2.5 text-xs font-semibold rounded-xl transition-all duration-200',
-              activeTab === tab.id
+              'flex-1 flex flex-col items-center gap-1 py-2.5 text-xs font-semibold rounded-xl transition-colors',
+              activeTool === tool.id
                 ? 'bg-accent text-white shadow-sm'
                 : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
             )}
-            aria-label={tab.label}
+            whileTap={{ scale: 0.92 }}
+            aria-label={tool.label}
           >
-            <tab.icon className="h-5 w-5" />
-            {tab.label}
-          </button>
+            <tool.icon className="h-5 w-5" />
+            {tool.label}
+          </motion.button>
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="border-t border-border bg-bg-secondary">
-        {activeTab === 'text' && (
-          <TextTab draft={draft} onUpdate={updateDraft} />
+      {/* Tool Content Panel */}
+      <AnimatePresence>
+        {activeTool && (
+          <motion.div
+            className="border-t border-border bg-bg-secondary overflow-hidden"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          >
+            <div className="max-h-[220px] overflow-y-auto">
+              {activeTool === 'text' && <TextTab draft={draft} onUpdate={updateDraft} />}
+              {activeTool === 'music' && <MusicTab draft={draft} onUpdate={updateDraft} />}
+              {activeTool === 'stickers' && <StickersTab draft={draft} onUpdate={updateDraft} />}
+              {activeTool === 'style' && <StyleTab draft={draft} onUpdate={updateDraft} />}
+            </div>
+          </motion.div>
         )}
-        {activeTab === 'music' && (
-          <MusicTab draft={draft} onUpdate={updateDraft} />
-        )}
-        {activeTab === 'stickers' && (
-          <StickersTab draft={draft} onUpdate={updateDraft} />
-        )}
-        {activeTab === 'style' && (
-          <StyleTab draft={draft} onUpdate={updateDraft} />
-        )}
-      </div>
+      </AnimatePresence>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*,video/*"
-        className="hidden"
-        onChange={handleFileSelect}
-      />
-    </div>
+      <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
+    </motion.div>
   )
 }
 
+// ===== Tool Tabs =====
+
 function TextTab({ draft, onUpdate }: { draft: StoryDraft; onUpdate: (u: Partial<StoryDraft>) => void }) {
   return (
-    <div className="p-4 max-h-[200px] overflow-y-auto">
+    <div className="p-4">
       <p className="text-xs font-medium text-text-secondary mb-3">Background</p>
       <div className="grid grid-cols-8 gap-2">
         {BACKGROUND_PRESETS.map((preset) => (
-          <button
+          <motion.button
             key={preset.name}
             onClick={() => onUpdate({ backgroundImage: preset.value })}
-            className={cn(
-              'h-10 w-10 rounded-xl border-2 transition-all',
-              draft.backgroundImage === preset.value
-                ? 'border-accent scale-110 shadow-lg'
-                : 'border-transparent hover:scale-105'
-            )}
+            className={cn('h-10 w-10 rounded-xl border-2 transition-colors', draft.backgroundImage === preset.value ? 'border-accent shadow-lg' : 'border-transparent')}
             style={{ background: preset.value }}
+            whileTap={{ scale: 0.9 }}
             aria-label={preset.name}
           />
         ))}
@@ -436,42 +374,25 @@ function MusicTab({ draft, onUpdate }: { draft: StoryDraft; onUpdate: (u: Partia
       }
     } catch {
       onUpdate({ musicUrl: url, musicTitle: 'Audio' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleRemove = () => {
-    setUrl('')
-    onUpdate({ musicUrl: undefined, musicTitle: undefined })
+    } finally { setLoading(false) }
   }
 
   return (
-    <div className="p-4 max-h-[200px] overflow-y-auto">
+    <div className="p-4">
       {draft.musicUrl ? (
         <div className="flex items-center gap-3 p-3 bg-bg-primary rounded-2xl border border-border">
           <Music className="h-5 w-5 text-accent flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-text-primary truncate">{draft.musicTitle}</p>
-            <p className="text-xs text-text-tertiary truncate">{draft.musicUrl}</p>
           </div>
-          <button onClick={handleRemove} className="p-1 rounded-full hover:bg-bg-tertiary text-text-secondary" aria-label="Remove music">
+          <motion.button onClick={() => onUpdate({ musicUrl: undefined, musicTitle: undefined })} className="p-1 rounded-full hover:bg-bg-tertiary text-text-secondary" whileTap={{ scale: 0.85 }}>
             <X className="h-4 w-4" />
-          </button>
+          </motion.button>
         </div>
       ) : (
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste YouTube or audio URL..."
-            className="flex-1 h-10 px-4 rounded-2xl border-2 border-border bg-bg-primary text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-0"
-            aria-label="Music URL"
-          />
-          <Button size="sm" onClick={handleAdd} loading={loading} disabled={!url.trim()}>
-            Add
-          </Button>
+          <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Paste YouTube or audio URL..." className="flex-1 h-10 px-4 rounded-2xl border-2 border-border bg-bg-primary text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-0" />
+          <Button size="sm" onClick={handleAdd} loading={loading} disabled={!url.trim()}>Add</Button>
         </div>
       )}
     </div>
@@ -481,32 +402,23 @@ function MusicTab({ draft, onUpdate }: { draft: StoryDraft; onUpdate: (u: Partia
 function StickersTab({ draft, onUpdate }: { draft: StoryDraft; onUpdate: (u: Partial<StoryDraft>) => void }) {
   const emojis = ['😀','😂','😍','🥺','🔥','✨','🎉','❤️','👍','💀','🤔','😎','🥳','😭','🙌','💪','🎵','🌟','💡','🎯','🚀','💎','🌈','🦋']
 
-  const handleAddEmoji = (emoji: string) => {
-    const sticker: StorySticker = {
-      id: crypto.randomUUID(),
-      type: 'emoji',
-      content: emoji,
-      x: 50,
-      y: 50,
-      scale: 1,
-      rotation: 0,
-    }
-    onUpdate({ stickers: [...(draft.stickers || []), sticker] })
-  }
-
   return (
-    <div className="p-4 max-h-[200px] overflow-y-auto">
+    <div className="p-4">
       <p className="text-xs font-medium text-text-secondary mb-3">Tap to add — drag to reposition</p>
       <div className="grid grid-cols-8 gap-2">
         {emojis.map((emoji) => (
-          <button
+          <motion.button
             key={emoji}
-            onClick={() => handleAddEmoji(emoji)}
-            className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-bg-tertiary text-xl transition-colors"
+            onClick={() => {
+              const sticker: StorySticker = { id: crypto.randomUUID(), type: 'emoji', content: emoji, x: 50, y: 50, scale: 1, rotation: 0 }
+              onUpdate({ stickers: [...(draft.stickers || []), sticker] })
+            }}
+            className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-bg-tertiary text-xl"
+            whileTap={{ scale: 1.3 }}
             aria-label={`Add ${emoji}`}
           >
             {emoji}
-          </button>
+          </motion.button>
         ))}
       </div>
       {draft.stickers && draft.stickers.length > 0 && (
@@ -514,14 +426,15 @@ function StickersTab({ draft, onUpdate }: { draft: StoryDraft; onUpdate: (u: Par
           <p className="text-xs font-medium text-text-secondary mb-2">Added ({draft.stickers.length})</p>
           <div className="flex flex-wrap gap-2">
             {draft.stickers.map((s) => (
-              <button
+              <motion.button
                 key={s.id}
                 onClick={() => onUpdate({ stickers: draft.stickers?.filter((st) => st.id !== s.id) })}
-                className="h-10 w-10 flex items-center justify-center rounded-xl bg-bg-primary border border-border hover:border-error text-xl transition-colors"
+                className="h-10 w-10 flex items-center justify-center rounded-xl bg-bg-primary border border-border hover:border-error text-xl"
+                whileTap={{ scale: 0.85 }}
                 aria-label={`Remove ${s.content}`}
               >
                 {s.content}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -532,19 +445,17 @@ function StickersTab({ draft, onUpdate }: { draft: StoryDraft; onUpdate: (u: Par
 
 function StyleTab({ draft, onUpdate }: { draft: StoryDraft; onUpdate: (u: Partial<StoryDraft>) => void }) {
   return (
-    <div className="p-4 max-h-[200px] overflow-y-auto space-y-4">
+    <div className="p-4 space-y-4">
       <div>
         <p className="text-xs font-medium text-text-secondary mb-2">Text Color</p>
         <div className="flex gap-2">
           {TEXT_COLORS.map((color) => (
-            <button
+            <motion.button
               key={color}
               onClick={() => onUpdate({ textColor: color })}
-              className={cn(
-                'h-8 w-8 rounded-full border-2 transition-all',
-                draft.textColor === color ? 'border-accent scale-110 ring-2 ring-accent/30' : 'border-border'
-              )}
+              className={cn('h-8 w-8 rounded-full border-2', draft.textColor === color ? 'border-accent ring-2 ring-accent/30' : 'border-border')}
               style={{ backgroundColor: color }}
+              whileTap={{ scale: 0.85 }}
               aria-label={`Text color ${color}`}
             />
           ))}
@@ -554,83 +465,40 @@ function StyleTab({ draft, onUpdate }: { draft: StoryDraft; onUpdate: (u: Partia
         <p className="text-xs font-medium text-text-secondary mb-2">Font Style</p>
         <div className="flex gap-2">
           {FONT_STYLES.map((font) => (
-            <button
+            <motion.button
               key={font.id}
               onClick={() => onUpdate({ fontStyle: font.id })}
-              className={cn(
-                'px-3 py-1.5 rounded-xl text-sm border-2 transition-all',
-                draft.fontStyle === font.id
-                  ? 'border-accent bg-accent/10 text-accent font-medium'
-                  : 'border-border text-text-secondary hover:border-border-strong'
-              )}
+              className={cn('px-3 py-1.5 rounded-xl text-sm border-2', draft.fontStyle === font.id ? 'border-accent bg-accent/10 text-accent font-medium' : 'border-border text-text-secondary')}
+              whileTap={{ scale: 0.92 }}
             >
               <span className={font.className}>{font.label}</span>
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-medium text-text-secondary">Text Overlays</p>
-          <button
+          <motion.button
             onClick={() => {
-              const overlay: import('@/types/api').TextOverlay = {
-                id: crypto.randomUUID(),
-                text: 'Text',
-                x: 50,
-                y: 50,
-                color: draft.textColor || '#FFFFFF',
-                fontSize: 24,
-                fontWeight: 'bold',
-              }
+              const overlay: import('@/types/api').TextOverlay = { id: crypto.randomUUID(), text: 'Text', x: 50, y: 50, color: draft.textColor || '#FFFFFF', fontSize: 24, fontWeight: 'bold' }
               onUpdate({ textOverlays: [...(draft.textOverlays || []), overlay] })
             }}
             className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover"
+            whileTap={{ scale: 0.9 }}
           >
-            <Plus className="h-3 w-3" />
-            Add
-          </button>
+            <Plus className="h-3 w-3" /> Add
+          </motion.button>
         </div>
         {draft.textOverlays && draft.textOverlays.length > 0 ? (
           <div className="space-y-2">
             {draft.textOverlays.map((overlay) => (
               <div key={overlay.id} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={overlay.text}
-                  onChange={(e) => {
-                    onUpdate({
-                      textOverlays: draft.textOverlays?.map((o) =>
-                        o.id === overlay.id ? { ...o, text: e.target.value } : o
-                      ),
-                    })
-                  }}
-                  className="flex-1 h-8 px-3 rounded-xl border-2 border-border bg-bg-primary text-sm text-text-primary focus:border-accent focus:ring-0"
-                  placeholder="Overlay text"
-                />
-                <input
-                  type="number"
-                  value={overlay.fontSize}
-                  onChange={(e) => {
-                    onUpdate({
-                      textOverlays: draft.textOverlays?.map((o) =>
-                        o.id === overlay.id ? { ...o, fontSize: parseInt(e.target.value) || 24 } : o
-                      ),
-                    })
-                  }}
-                  className="w-16 h-8 px-2 rounded-xl border-2 border-border bg-bg-primary text-sm text-text-primary text-center focus:border-accent focus:ring-0"
-                  min={12}
-                  max={72}
-                />
-                <button
-                  onClick={() => {
-                    onUpdate({ textOverlays: draft.textOverlays?.filter((o) => o.id !== overlay.id) })
-                  }}
-                  className="p-1.5 rounded-full hover:bg-error-light text-error"
-                  aria-label="Remove text overlay"
-                >
+                <input type="text" value={overlay.text} onChange={(e) => onUpdate({ textOverlays: draft.textOverlays?.map((o) => o.id === overlay.id ? { ...o, text: e.target.value } : o) })} className="flex-1 h-8 px-3 rounded-xl border-2 border-border bg-bg-primary text-sm text-text-primary focus:border-accent focus:ring-0" />
+                <input type="number" value={overlay.fontSize} onChange={(e) => onUpdate({ textOverlays: draft.textOverlays?.map((o) => o.id === overlay.id ? { ...o, fontSize: parseInt(e.target.value) || 24 } : o) })} className="w-16 h-8 px-2 rounded-xl border-2 border-border bg-bg-primary text-sm text-text-primary text-center focus:border-accent focus:ring-0" min={12} max={72} />
+                <motion.button onClick={() => onUpdate({ textOverlays: draft.textOverlays?.filter((o) => o.id !== overlay.id) })} className="p-1.5 rounded-full hover:bg-error-light text-error" whileTap={{ scale: 0.85 }} aria-label="Remove">
                   <Trash2 className="h-4 w-4" />
-                </button>
+                </motion.button>
               </div>
             ))}
           </div>
@@ -642,81 +510,40 @@ function StyleTab({ draft, onUpdate }: { draft: StoryDraft; onUpdate: (u: Partia
   )
 }
 
-function StoryPreview({ draft, user, onClose, onPost, posting }: {
-  draft: StoryDraft
-  user: any
-  onClose: () => void
-  onPost: () => void
-  posting: boolean
-}) {
+// ===== Story Preview =====
+
+function StoryPreview({ draft, user, onClose, onPost, posting }: { draft: StoryDraft; user: any; onClose: () => void; onPost: () => void; posting: boolean }) {
   return (
-    <div className="fixed inset-0 z-modal bg-black flex flex-col">
+    <motion.div
+      className="fixed inset-0 z-modal bg-black flex flex-col"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+    >
       <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={onClose} className="p-2 rounded-full bg-white/10 text-white" aria-label="Back to editor">
+        <motion.button onClick={onClose} className="p-2 rounded-full bg-white/10 text-white" whileTap={{ scale: 0.85 }} aria-label="Back to editor">
           <ArrowLeft className="h-5 w-5" />
-        </button>
+        </motion.button>
         <Button size="sm" loading={posting} onClick={onPost} disabled={posting}>
-          <Send className="h-4 w-4 mr-1" />
-          Post
+          <Send className="h-4 w-4 mr-1" /> Post
         </Button>
       </div>
       <div className="flex-1 flex items-center justify-center p-4">
-        <div
-          className="relative w-full max-w-[360px] aspect-[9/16] rounded-2xl overflow-hidden flex items-center justify-center"
-          style={getStyleForDraft(draft)}
-        >
-          {draft.mediaPreview && (
-            <img
-              src={draft.mediaPreview}
-              alt="Story preview"
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ filter: draft.filter }}
-            />
-          )}
+        <div className="relative w-full max-w-[360px] aspect-[9/16] rounded-3xl overflow-hidden flex items-center justify-center" style={getStyleForDraft(draft)}>
+          {draft.mediaPreview && <img src={draft.mediaPreview} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: draft.filter }} />}
           {(draft.content || (!draft.mediaPreview && draft.backgroundImage)) && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <p
-                className={cn(
-                  'text-center px-8 text-2xl font-bold whitespace-pre-wrap break-words',
-                  getFontClass(draft.fontStyle)
-                )}
-                style={{ color: draft.textColor }}
-              >
-                {draft.content || ''}
-              </p>
+              <p className={cn('text-center px-8 text-2xl font-bold whitespace-pre-wrap break-words', getFontClass(draft.fontStyle))} style={{ color: draft.textColor }}>{draft.content || ''}</p>
             </div>
           )}
           {draft.stickers?.map((s) => (
-            <div
-              key={s.id}
-              className="absolute text-4xl"
-              style={{
-                left: `${s.x}%`,
-                top: `${s.y}%`,
-                transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)`,
-              }}
-            >
-              {s.content}
-            </div>
+            <div key={s.id} className="absolute text-4xl" style={{ left: `${s.x}%`, top: `${s.y}%`, transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` }}>{s.content}</div>
           ))}
           {draft.textOverlays?.map((o) => (
-            <div
-              key={o.id}
-              className="absolute pointer-events-none"
-              style={{
-                left: `${o.x}%`,
-                top: `${o.y}%`,
-                transform: 'translate(-50%, -50%)',
-                color: o.color,
-                fontSize: `${o.fontSize}px`,
-                fontWeight: o.fontWeight,
-              }}
-            >
-              {o.text}
-            </div>
+            <div key={o.id} className="absolute pointer-events-none" style={{ left: `${o.x}%`, top: `${o.y}%`, transform: 'translate(-50%, -50%)', color: o.color, fontSize: `${o.fontSize}px`, fontWeight: o.fontWeight }}>{o.text}</div>
           ))}
           {draft.musicUrl && (
-            <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
+            <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-full px-4 py-2">
               <Music className="h-4 w-4 text-white" />
               <span className="text-xs text-white truncate">{draft.musicTitle || 'Music'}</span>
             </div>
@@ -727,14 +554,14 @@ function StoryPreview({ draft, user, onClose, onPost, posting }: {
         <Avatar src={user?.avatar} alt={user?.name} size="sm" />
         <span className="text-sm text-white font-medium">{user?.name || 'You'}</span>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
+// ===== Helpers =====
+
 function getStyleForDraft(draft: StoryDraft): React.CSSProperties {
-  if (draft.backgroundImage) {
-    return { background: draft.backgroundImage }
-  }
+  if (draft.backgroundImage) return { background: draft.backgroundImage }
   return { background: '#0A0A0B' }
 }
 
@@ -748,9 +575,7 @@ function getFontClass(fontStyle?: string): string {
 }
 
 function getYouTubeEmbedUrl(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/,
-  ]
+  const patterns = [/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/]
   for (const pattern of patterns) {
     const match = url.match(pattern)
     if (match) return `https://www.youtube.com/embed/${match[1]}`
