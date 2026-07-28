@@ -66,7 +66,7 @@ export function Header() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary group-focus-within:text-accent transition-colors" />
             <input
               type="text"
-              placeholder="Search SMUGFLEX..."
+              placeholder="Search S.S..."
               className={cn(
                 'w-full h-10 pl-10 pr-4 rounded-2xl border-2 bg-bg-secondary text-text-primary text-sm',
                 'placeholder:text-text-tertiary transition-all duration-200',

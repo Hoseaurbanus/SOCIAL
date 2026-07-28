@@ -69,7 +69,7 @@ export default function LoginPage() {
         <div className="relative z-10 text-center lg:text-left max-w-md">
           <div className="hidden lg:block">
             <h1 className="text-4xl font-bold text-white mb-4">
-              Welcome back to <span className="text-secondary">SMUGFLEX</span>
+              Welcome back to <span className="text-secondary">S.S</span>
             </h1>
             <p className="text-lg text-white/80 mb-8">
               Your digital ecosystem for meaningful connections and knowledge sharing.

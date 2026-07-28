@@ -128,7 +128,7 @@ export default function CreatePasswordPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-text-primary mb-2">Password created!</h1>
-            <p className="text-text-secondary">Welcome to SMUGFLEX. Redirecting to your feed...</p>
+            <p className="text-text-secondary">Welcome to S.S. Redirecting to your feed...</p>
           </div>
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent mx-auto" />
         </div>
