@@ -1,42 +1,91 @@
-import { NavLink } from 'react-router'
+import { NavLink, useLocation } from 'react-router'
 import { Home, Compass, MessageCircle, Bell, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUnreadCount } from '@/hooks/use-notifications'
+import { useScrollDirection } from '@/hooks/use-scroll-direction'
 
 const navItems = [
   { to: '/home', icon: Home, label: 'Home' },
   { to: '/discover', icon: Compass, label: 'Discover' },
-  { to: '/messages', icon: MessageCircle, label: 'Messages' },
-  { to: '/notifications', icon: Bell, label: 'Notifications' },
+  { to: '/messages', icon: MessageCircle, label: 'Messages', showBadge: true },
+  { to: '/notifications', icon: Bell, label: 'Alerts', showBadge: true },
   { to: '/profile', icon: User, label: 'Profile' },
 ]
 
 export function BottomNav() {
   const { data: unreadCount = 0 } = useUnreadCount()
+  const { direction, scrollY } = useScrollDirection(10)
+  const location = useLocation()
+
+  const isHidden = direction === 'down' && scrollY > 100
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-header bg-bg-primary/95 backdrop-blur-lg border-t border-border md:hidden" aria-label="Main navigation">
-      <div className="flex items-center justify-around h-16 px-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) => cn(
-              'relative flex flex-col items-center gap-0.5 px-3 py-2 text-xs font-medium transition-all duration-200 min-w-[56px] rounded-2xl',
-              isActive
-                ? 'text-accent bg-accent-light'
-                : 'text-text-secondary hover:text-text-primary'
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-            {item.to === '/notifications' && unreadCount > 0 && (
-              <span className="absolute -top-0.5 right-1 h-5 min-w-[20px] px-1 flex items-center justify-center text-[10px] font-bold rounded-full bg-secondary text-white shadow-sm">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+    <nav
+      className={cn(
+        'fixed bottom-0 left-0 right-0 z-header md:hidden',
+        'bg-bg-primary/95 backdrop-blur-xl',
+        'border-t border-border',
+        'transition-all duration-300 ease-out',
+        isHidden ? 'translate-y-full' : 'translate-y-0'
+      )}
+      aria-label="Main navigation"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      <div className="flex items-center justify-around h-16 px-1">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.to ||
+            (item.to === '/messages' && location.pathname.startsWith('/messages'))
+          const showNotificationBadge = item.to === '/notifications' && unreadCount > 0
+
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className="relative flex flex-col items-center justify-center min-w-[56px] h-full py-2"
+            >
+              {() => (
+                <div className="relative flex flex-col items-center gap-1">
+                  {/* Active indicator pill */}
+                  <div
+                    className={cn(
+                      'absolute -top-1 left-1/2 -translate-x-1/2 h-6 rounded-full transition-all duration-300 ease-out',
+                      isActive ? 'w-8 bg-accent opacity-100' : 'w-0 bg-transparent opacity-0'
+                    )}
+                  />
+
+                  {/* Icon container */}
+                  <div
+                    className={cn(
+                      'relative p-2 rounded-2xl transition-all duration-200',
+                      isActive
+                        ? 'text-white'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary active:scale-90'
+                    )}
+                  >
+                    <item.icon className={cn('h-5 w-5 transition-transform duration-200', isActive && 'scale-110')} />
+
+                    {/* Notification badge */}
+                    {showNotificationBadge && (
+                      <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center text-[10px] font-bold rounded-full bg-secondary text-white shadow-lg shadow-secondary/30">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Label */}
+                  <span
+                    className={cn(
+                      'text-[10px] font-semibold transition-all duration-200',
+                      isActive ? 'text-accent' : 'text-text-tertiary'
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                </div>
+              )}
+            </NavLink>
+          )
+        })}
       </div>
     </nav>
   )

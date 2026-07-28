@@ -6,8 +6,8 @@ export function AppLayout() {
   return (
     <div className="min-h-screen bg-bg-secondary">
       <Header />
-      <main className="pt-16 pb-20 md:pb-0">
-        <div className="max-w-[600px] mx-auto px-4">
+      <main className="pt-16 pb-24 md:pb-4">
+        <div className="max-w-[600px] mx-auto">
           <Outlet />
         </div>
       </main>
