@@ -44,7 +44,7 @@ export default function SettingsPage() {
         <h1 className="text-xl font-bold text-text-primary">Settings</h1>
       </div>
 
-      <div className="bg-bg-primary">
+      <div className="bg-bg-primary pb-4">
         <div className="px-4 pt-4 pb-2">
           <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider">Account</h3>
         </div>
