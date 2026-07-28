@@ -104,8 +104,9 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
       sessionStorage.removeItem(draftKey)
       setDraft({ mode: 'text', textColor: '#FFFFFF', fontStyle: 'sans', filter: 'none' })
       onClose()
-    } catch {
-      toast({ title: 'Failed to post story', variant: 'error' })
+    } catch (err: any) {
+      const msg = err?.message || err?.error?.message || 'Failed to post story'
+      toast({ title: msg, variant: 'error' })
     } finally {
       setPosting(false)
     }

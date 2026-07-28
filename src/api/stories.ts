@@ -74,7 +74,9 @@ export async function createStoryFromDraft(draft: StoryDraft): Promise<Story> {
     .select('*, user:profiles(id, name, username, avatar)')
     .single()
 
-  if (error) throw error
+  if (error) {
+    throw new Error(error.message || 'Database error creating story')
+  }
   return data as Story
 }
 
