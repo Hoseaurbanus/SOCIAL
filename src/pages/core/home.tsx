@@ -8,6 +8,7 @@ import { ComposeModal } from '@/components/organisms/compose-modal'
 import { cn } from '@/lib/utils'
 import { useFeedPosts, useFollowingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 
 const tabs = [
   { id: 'for-you', label: 'For You', icon: LayoutGrid },
@@ -29,6 +30,7 @@ export default function HomePage() {
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
   const deletePostMutation = useDeletePost()
+  const toast = useToast((s) => s.toast)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
@@ -38,12 +40,16 @@ export default function HomePage() {
   const { data: bookmarkedMap } = useBookmarkStatus(postIds)
 
   const handleLike = useCallback((postId: string) => {
-    toggleLike.mutate(postId)
-  }, [toggleLike])
+    toggleLike.mutate(postId, {
+      onError: () => toast({ title: 'Something went wrong', variant: 'error' }),
+    })
+  }, [toggleLike, toast])
 
   const handleBookmark = useCallback((postId: string) => {
-    toggleBookmark.mutate(postId)
-  }, [toggleBookmark])
+    toggleBookmark.mutate(postId, {
+      onError: () => toast({ title: 'Something went wrong', variant: 'error' }),
+    })
+  }, [toggleBookmark, toast])
 
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) return

@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Lock, Smartphone, Key } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '@/config/supabase'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 interface SecurityItemProps {
   icon: React.ReactNode
@@ -33,20 +34,24 @@ export default function SecurityPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const toast = useToast((s) => s.toast)
 
   const handleChangePassword = async () => {
     setError('')
     setSuccess('')
     if (!currentPassword || !newPassword || !confirmPassword) {
       setError('All fields are required')
+      toast({ title: 'All fields are required', variant: 'error' })
       return
     }
     if (newPassword !== confirmPassword) {
       setError('New passwords do not match')
+      toast({ title: 'New passwords do not match', variant: 'error' })
       return
     }
     if (newPassword.length < 6) {
       setError('Password must be at least 6 characters')
+      toast({ title: 'Password must be at least 6 characters', variant: 'error' })
       return
     }
     setIsLoading(true)
@@ -54,12 +59,14 @@ export default function SecurityPage() {
       const { error: authError } = await supabase.auth.updateUser({ password: newPassword })
       if (authError) throw authError
       setSuccess('Password updated successfully')
+      toast({ title: 'Password updated successfully', variant: 'success' })
       setShowPasswordForm(false)
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (e: any) {
       setError(e.message || 'Failed to update password')
+      toast({ title: e.message || 'Failed to update password', variant: 'error' })
     } finally {
       setIsLoading(false)
     }

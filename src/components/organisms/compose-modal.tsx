@@ -4,6 +4,7 @@ import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
 import { useCreatePost } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/config/supabase'
 import { cn } from '@/lib/utils'
 
@@ -21,6 +22,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const createPost = useCreatePost()
   const user = useAuthStore((s) => s.user)
+  const toast = useToast((s) => s.toast)
 
   useEffect(() => {
     if (isOpen) {
@@ -87,8 +89,12 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
             setSelectedImages([])
             setError('')
             onClose()
+            toast({ title: 'Post created!', variant: 'success' })
           },
-          onError: (err) => setError(err.message || 'Failed to create post'),
+          onError: (err) => {
+            setError(err.message || 'Failed to create post')
+            toast({ title: err.message || 'Failed to create post', variant: 'error' })
+          },
         }
       )
     } catch (err: any) {

@@ -7,6 +7,7 @@ import { PostCard } from '@/components/molecules/post-card'
 import { useProfile, useFollowCounts, useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
 import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>()
@@ -21,6 +22,7 @@ export default function ProfilePage() {
   const toggleBookmark = useToggleBookmark()
   const deletePostMutation = useDeletePost()
   const [activeTab, setActiveTab] = useState('posts')
+  const toast = useToast((s) => s.toast)
 
   const posts = postsData?.pages.flatMap((p) => p.posts) || []
   const postIds = posts.map((p) => p.id)
@@ -76,7 +78,9 @@ export default function ProfilePage() {
             <Button
               variant={following ? 'secondary' : 'primary'}
               size="sm"
-              onClick={() => toggleFollow.mutate(profile.id)}
+              onClick={() => toggleFollow.mutate(profile.id, {
+                onSuccess: () => toast({ title: following ? 'Unfollowed' : 'Followed', variant: 'success' }),
+              })}
               loading={toggleFollow.isPending}
             >
               {following ? 'Following' : 'Follow'}

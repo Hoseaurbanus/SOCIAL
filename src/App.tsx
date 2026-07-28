@@ -4,6 +4,7 @@ import { router } from './router'
 import { useAuthStore } from './stores/auth-store'
 import { useEffect } from 'react'
 import { ErrorBoundary } from './components/error-boundary'
+import { ToastContainer } from './components/molecules/toast-container'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,7 @@ export default function App() {
       <ErrorBoundary>
         <RouterProvider router={router} />
       </ErrorBoundary>
+      <ToastContainer />
     </QueryClientProvider>
   )
 }

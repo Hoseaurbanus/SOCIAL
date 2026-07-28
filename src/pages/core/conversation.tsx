@@ -5,6 +5,7 @@ import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
 import { useMessages, useSendMessage, useMarkAsRead } from '@/hooks/use-messages'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/config/supabase'
 
 export default function ConversationPage() {
@@ -19,6 +20,7 @@ export default function ConversationPage() {
   const [participantError, setParticipantError] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const toast = useToast((s) => s.toast)
 
   useEffect(() => {
     if (!conversationId) return
@@ -51,7 +53,10 @@ export default function ConversationPage() {
     if (!newMessage.trim() || !conversationId) return
     sendMessage.mutate(
       { conversationId, content: newMessage.trim() },
-      { onSuccess: () => setNewMessage('') }
+      {
+        onSuccess: () => setNewMessage(''),
+        onError: () => toast({ title: 'Failed to send message. Please try again.', variant: 'error' }),
+      }
     )
   }
 
@@ -121,9 +126,6 @@ export default function ConversationPage() {
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-border bg-bg-primary">
-        {sendMessage.isError && (
-          <p className="text-sm text-red-500 mb-2">Failed to send message. Please try again.</p>
-        )}
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
