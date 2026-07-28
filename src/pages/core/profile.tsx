@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
-import { Settings, MapPin, LinkIcon, Calendar } from 'lucide-react'
+import { Link, useParams, useNavigate } from 'react-router'
+import { ChevronLeft, Settings, MapPin, LinkIcon, Calendar } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { PostCard } from '@/components/molecules/post-card'
@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>()
+  const navigate = useNavigate()
   const currentUser = useAuthStore((s) => s.user)
   const authLoading = useAuthStore((s) => s.isLoading)
   const { data: profileByUsername, isLoading: profileByUsernameLoading } = useProfile(username || '')
@@ -32,6 +33,7 @@ export default function ProfilePage() {
   const toast = useToast((s) => s.toast)
 
   const posts = postsData?.pages.flatMap((p) => p.posts) || []
+  const totalPosts = postsData?.pages[0]?.total || 0
   const postIds = posts.map((p) => p.id)
   const { data: likedMap } = useLikeStatus(postIds)
   const { data: bookmarkedMap } = useBookmarkStatus(postIds)
@@ -82,21 +84,33 @@ export default function ProfilePage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <div>
-          <h1 className="text-lg font-bold text-text-primary">{profile.name}</h1>
-          <p className="text-sm text-text-tertiary">{posts.length} posts</p>
+        <div className="flex items-center gap-3">
+          {!isOwnProfile && (
+            <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-bg-tertiary text-text-secondary transition-colors" aria-label="Go back">
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
+          <div>
+            <h1 className="text-lg font-bold text-text-primary">{profile.name}</h1>
+            <p className="text-sm text-text-tertiary">{totalPosts} posts</p>
+          </div>
         </div>
-        <Link to="/settings" className="inline-flex items-center justify-center gap-2 h-8 px-3 text-sm font-medium rounded-md text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-colors">
+        <Link to="/settings" className="p-2 rounded-full hover:bg-bg-tertiary text-text-secondary transition-colors" aria-label="Settings">
           <Settings className="h-5 w-5" />
         </Link>
       </div>
+
+      {/* Banner */}
+      <div className="h-32 bg-gradient-to-br from-accent to-accent-dark" />
 
       {/* Profile Info */}
       <div className="px-4 pb-4">
         <div className="flex items-end justify-between -mt-12 mb-3">
           <Avatar src={profile.avatar} alt={profile.name} size="2xl" className="border-4 border-bg-primary" />
           {isOwnProfile ? (
-            <Button variant="secondary" size="sm">Edit Profile</Button>
+            <Button variant="secondary" size="sm" asChild>
+              <Link to="/settings/account">Edit Profile</Link>
+            </Button>
           ) : (
             <Button
               variant={following ? 'secondary' : 'primary'}
@@ -118,7 +132,7 @@ export default function ProfilePage() {
           <p className="mt-2 text-text-primary">{profile.bio}</p>
         )}
 
-        <div className="flex items-center gap-4 mt-3 text-sm text-text-tertiary">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-text-tertiary">
           {profile.location && (
             <span className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
@@ -138,23 +152,25 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex gap-4 mt-3">
-          <span className="text-sm">
+          <button className="text-sm hover:underline" onClick={() => {}}>
             <strong className="text-text-primary">{followCounts?.following || 0}</strong>{' '}
             <span className="text-text-tertiary">Following</span>
-          </span>
-          <span className="text-sm">
+          </button>
+          <button className="text-sm hover:underline" onClick={() => {}}>
             <strong className="text-text-primary">{followCounts?.followers || 0}</strong>{' '}
             <span className="text-text-tertiary">Followers</span>
-          </span>
+          </button>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="border-b border-border">
-        <div className="flex">
+        <div className="flex" role="tablist" aria-label="Profile content">
           {['posts', 'replies', 'likes', 'bookmarks'].map((tab) => (
             <button
               key={tab}
+              role="tab"
+              aria-selected={activeTab === tab}
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-3 text-sm font-medium text-center capitalize border-b-2 transition-colors ${
                 activeTab === tab
@@ -230,10 +246,10 @@ export default function ProfilePage() {
             replies.map((reply: any) => (
               <div key={reply.id} className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Avatar src={reply.user?.avatar} alt={reply.user?.name} size="sm" />
+                  <Avatar src={reply.commenter?.avatar} alt={reply.commenter?.name} size="sm" />
                   <div>
-                    <span className="text-sm font-medium text-text-primary">{reply.user?.name}</span>
-                    <span className="text-sm text-text-secondary ml-2">@{reply.user?.username}</span>
+                    <span className="text-sm font-medium text-text-primary">{reply.commenter?.name}</span>
+                    <span className="text-sm text-text-secondary ml-2">@{reply.commenter?.username}</span>
                   </div>
                   <span className="text-xs text-text-tertiary ml-auto">{new Date(reply.created_at).toLocaleDateString()}</span>
                 </div>

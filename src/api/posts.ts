@@ -219,7 +219,7 @@ export async function fetchBookmarkedPosts(userId: string) {
 export async function fetchUserReplies(userId: string) {
   const { data, error } = await supabase
     .from('comments')
-    .select('*, post:posts(id, content, user_id, user:profiles(id, name, username, avatar))')
+    .select('*, commenter:profiles!comments_user_id_fkey(id, name, username, avatar), post:posts(id, content, user_id, user:profiles(id, name, username, avatar))')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
