@@ -128,6 +128,25 @@ create table if not exists public.notifications (
   created_at timestamp with time zone default now()
 );
 
+-- Communities
+create table if not exists public.communities (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  description text,
+  icon text default '🌐',
+  created_by uuid references public.profiles on delete cascade not null,
+  member_count int default 1,
+  created_at timestamp with time zone default now()
+);
+
+-- Community members
+create table if not exists public.community_members (
+  community_id uuid references public.communities on delete cascade not null,
+  user_id uuid references public.profiles on delete cascade not null,
+  joined_at timestamp with time zone default now(),
+  primary key (community_id, user_id)
+);
+
 -- Enable Row Level Security (safe to re-run)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
@@ -140,6 +159,8 @@ ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conversation_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.communities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.community_members ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if any, then recreate
 DO $$ BEGIN
@@ -174,7 +195,12 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
   DROP POLICY IF EXISTS "System can create notifications" ON public.notifications;
   DROP POLICY IF EXISTS "Users can mark own notifications as read" ON public.notifications;
-EXCEPTION WHEN OTHERS THEN NULL;
+  DROP POLICY IF EXISTS "Communities are viewable by everyone" ON public.communities;
+  DROP POLICY IF EXISTS "Users can create communities" ON public.communities;
+  DROP POLICY IF EXISTS "Community members are viewable by everyone" ON public.community_members;
+  DROP POLICY IF EXISTS "Users can join communities" ON public.community_members;
+  DROP POLICY IF EXISTS "Users can leave communities" ON public.community_members;
+  EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- RLS Policies: Profiles
@@ -276,3 +302,32 @@ CREATE POLICY "System can create notifications"
   ON public.notifications FOR INSERT WITH CHECK (true);
 CREATE POLICY "Users can mark own notifications as read"
   ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
+
+-- RLS Policies: Communities
+CREATE POLICY "Communities are viewable by everyone"
+  ON public.communities FOR SELECT USING (true);
+CREATE POLICY "Users can create communities"
+  ON public.communities FOR INSERT WITH CHECK (auth.uid() = created_by);
+
+-- RLS Policies: Community members
+CREATE POLICY "Community members are viewable by everyone"
+  ON public.community_members FOR SELECT USING (true);
+CREATE POLICY "Users can join communities"
+  ON public.community_members FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can leave communities"
+  ON public.community_members FOR DELETE USING (auth.uid() = user_id);
+
+-- Community member count functions
+create or replace function public.increment_community_members(community_id uuid)
+returns void as $$
+begin
+  update public.communities set member_count = member_count + 1 where id = community_id;
+end;
+$$ language plpgsql security definer;
+
+create or replace function public.decrement_community_members(community_id uuid)
+returns void as $$
+begin
+  update public.communities set member_count = GREATEST(member_count - 1, 0) where id = community_id;
+end;
+$$ language plpgsql security definer;

@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { TrendingUp, Users, Grid3X3, Compass } from 'lucide-react'
+import { TrendingUp, Users, Grid3X3, Compass, Plus, X } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { PostCard } from '@/components/molecules/post-card'
 import { Avatar } from '@/components/atoms/avatar'
 import { useTrendingPosts, useSuggestedUsers, useTrendingTopics } from '@/hooks/use-discover'
 import { useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus } from '@/hooks/use-posts'
 import { useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
+import { useCommunities, useJoinCommunity, useLeaveCommunity, useCreateCommunity } from '@/hooks/use-communities'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -46,11 +47,7 @@ export default function DiscoverPage() {
         {activeTab === 'discover' && <DiscoverTab />}
         {activeTab === 'trending' && <TrendingTab />}
         {activeTab === 'people' && <PeopleTab />}
-        {activeTab === 'communities' && (
-          <div className="text-center py-12">
-            <p className="text-text-secondary">Communities coming soon</p>
-          </div>
-        )}
+        {activeTab === 'communities' && <CommunitiesTab />}
       </div>
     </div>
   )
@@ -245,6 +242,127 @@ function PeopleTab() {
         })
       ) : (
         <p className="text-center text-text-secondary py-8">No suggestions yet</p>
+      )}
+    </div>
+  )
+}
+
+function CommunitiesTab() {
+  const { data: communities, isLoading } = useCommunities()
+  const joinCommunity = useJoinCommunity()
+  const leaveCommunity = useLeaveCommunity()
+  const createCommunity = useCreateCommunity()
+  const { toast } = useToast()
+  const [showCreate, setShowCreate] = useState(false)
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [icon, setIcon] = useState('🌐')
+
+  const handleCreate = () => {
+    if (!name.trim()) return
+    createCommunity.mutate(
+      { name: name.trim(), description: description.trim(), icon },
+      {
+        onSuccess: () => {
+          setShowCreate(false)
+          setName('')
+          setDescription('')
+          setIcon('🌐')
+          toast({ title: 'Community created!', variant: 'success' })
+        },
+        onError: (err) => toast({ title: err.message || 'Failed to create community', variant: 'error' }),
+      }
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-3 p-4 animate-pulse">
+            <div className="h-12 w-12 rounded-full bg-bg-tertiary" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-32 bg-bg-tertiary rounded" />
+              <div className="h-3 w-48 bg-bg-tertiary rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-semibold text-text-primary">Communities</h3>
+        <Button size="sm" onClick={() => setShowCreate(true)}>
+          <Plus className="h-4 w-4 mr-1" /> Create
+        </Button>
+      </div>
+
+      {showCreate && (
+        <div className="p-4 border border-border rounded-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-text-primary">New Community</h4>
+            <button onClick={() => setShowCreate(false)} className="text-text-tertiary hover:text-text-secondary">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex gap-2">
+            {['🌐', '💻', '🎨', '🎮', '📚', '音乐', '体育', '科技'].map((e) => (
+              <button
+                key={e}
+                onClick={() => setIcon(e)}
+                className={cn('h-9 w-9 rounded-lg flex items-center justify-center text-lg border', icon === e ? 'border-accent bg-accent/10' : 'border-border')}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Community name"
+            className="w-full bg-bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/20"
+          />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description (optional)"
+            rows={2}
+            className="w-full bg-bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/20 resize-none"
+          />
+          <Button fullWidth size="sm" loading={createCommunity.isPending} onClick={handleCreate} disabled={!name.trim()}>
+            Create Community
+          </Button>
+        </div>
+      )}
+
+      {communities && communities.length > 0 ? (
+        <div className="space-y-2">
+          {communities.map((c) => (
+            <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-bg-tertiary transition-colors">
+              <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center text-2xl flex-shrink-0">
+                {c.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-text-primary truncate">{c.name}</p>
+                <p className="text-xs text-text-secondary">{c.member_count} members</p>
+                {c.description && <p className="text-xs text-text-tertiary truncate mt-0.5">{c.description}</p>}
+              </div>
+              <Button
+                variant={c.is_member ? 'secondary' : 'primary'}
+                size="sm"
+                onClick={() => c.is_member ? leaveCommunity.mutate(c.id) : joinCommunity.mutate(c.id)}
+                loading={joinCommunity.isPending || leaveCommunity.isPending}
+              >
+                {c.is_member ? 'Joined' : 'Join'}
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-center text-text-secondary py-8">No communities yet. Create one!</p>
       )}
     </div>
   )

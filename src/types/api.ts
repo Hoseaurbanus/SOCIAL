@@ -75,3 +75,14 @@ export interface Notification {
   is_read: boolean
   created_at: string
 }
+
+export interface Community {
+  id: string
+  name: string
+  description?: string
+  icon: string
+  created_by: string
+  member_count: number
+  created_at: string
+  is_member?: boolean
+}
