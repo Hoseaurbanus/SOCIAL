@@ -9,6 +9,7 @@ export function useNotifications() {
       return lastPage.notifications.length === 20 ? allPages.length + 1 : undefined
     },
     initialPageParam: 1,
+    retry: false,
   })
 }
 
@@ -39,5 +40,6 @@ export function useUnreadCount() {
     queryKey: ['unread-count'],
     queryFn: getUnreadCount,
     refetchInterval: 30000,
+    retry: false,
   })
 }

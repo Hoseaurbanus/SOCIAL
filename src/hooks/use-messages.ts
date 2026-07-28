@@ -8,6 +8,7 @@ export function useConversations() {
   return useQuery({
     queryKey: ['conversations'],
     queryFn: fetchConversations,
+    retry: false,
   })
 }
 

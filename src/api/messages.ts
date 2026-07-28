@@ -10,7 +10,10 @@ export async function fetchConversations() {
     .select('conversation_id')
     .eq('user_id', user.id)
 
-  if (pError) throw pError
+  if (pError) {
+    if (pError.code === '42P01' || pError.code === '42501') return []
+    throw pError
+  }
   if (!participations?.length) return []
 
   const convIds = participations.map((p) => p.conversation_id)
@@ -21,7 +24,10 @@ export async function fetchConversations() {
     .in('id', convIds)
     .order('created_at', { ascending: false })
 
-  if (cError) throw cError
+  if (cError) {
+    if (cError.code === '42P01') return []
+    throw cError
+  }
 
   const results: Conversation[] = []
   for (const conv of conversations || []) {
@@ -57,7 +63,10 @@ export async function fetchMessages(conversationId: string) {
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
 
-  if (error) throw error
+  if (error) {
+    if (error.code === '42P01') return []
+    throw error
+  }
   return (data || []) as Message[]
 }
 
@@ -91,10 +100,12 @@ export async function createConversation(otherUserId: string) {
 
   if (convError) throw convError
 
-  await supabase.from('conversation_participants').insert([
+  const { error: partError } = await supabase.from('conversation_participants').insert([
     { conversation_id: conv.id, user_id: user.id },
     { conversation_id: conv.id, user_id: otherUserId },
   ])
+
+  if (partError) throw partError
 
   return conv.id
 }

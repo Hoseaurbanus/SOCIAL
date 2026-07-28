@@ -15,7 +15,10 @@ export async function fetchNotifications(page = 1, pageSize = 20) {
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  if (error) throw error
+  if (error) {
+    if (error.code === '42P01') return { notifications: [], total: 0 }
+    throw error
+  }
   return { notifications: (data || []) as Notification[], total: count || 0 }
 }
 
@@ -25,7 +28,10 @@ export async function markNotificationRead(notificationId: string) {
     .update({ is_read: true })
     .eq('id', notificationId)
 
-  if (error) throw error
+  if (error) {
+    if (error.code === '42P01') return
+    throw error
+  }
 }
 
 export async function markAllNotificationsRead() {
@@ -38,7 +44,10 @@ export async function markAllNotificationsRead() {
     .eq('user_id', user.id)
     .eq('is_read', false)
 
-  if (error) throw error
+  if (error) {
+    if (error.code === '42P01') return
+    throw error
+  }
 }
 
 export async function getUnreadCount() {
@@ -51,6 +60,9 @@ export async function getUnreadCount() {
     .eq('user_id', user.id)
     .eq('is_read', false)
 
-  if (error) throw error
+  if (error) {
+    if (error.code === '42P01') return 0
+    throw error
+  }
   return count || 0
 }
