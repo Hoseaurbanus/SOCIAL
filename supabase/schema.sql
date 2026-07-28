@@ -86,10 +86,38 @@ create table if not exists public.follows (
 create table if not exists public.stories (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles on delete cascade not null,
-  media_url text not null,
-  media_type text check (media_type in ('image', 'video')) not null,
+  media_url text,
+  media_type text check (media_type in ('image', 'video', 'text')) not null,
+  text_content text,
+  background_style jsonb,
+  text_color text default '#FFFFFF',
+  font_style text default 'sans',
+  music_url text,
+  music_title text,
+  stickers jsonb default '[]'::jsonb,
+  text_overlays jsonb default '[]'::jsonb,
+  view_count int default 0,
+  reaction_count int default 0,
   created_at timestamp with time zone default now(),
   expires_at timestamp with time zone not null
+);
+
+-- Story reactions
+create table if not exists public.story_reactions (
+  id uuid default gen_random_uuid() primary key,
+  story_id uuid references public.stories on delete cascade not null,
+  user_id uuid references public.profiles on delete cascade not null,
+  emoji text not null,
+  created_at timestamp with time zone default now(),
+  unique(story_id, user_id)
+);
+
+-- Story views
+create table if not exists public.story_views (
+  story_id uuid references public.stories on delete cascade not null,
+  user_id uuid references public.profiles on delete cascade not null,
+  viewed_at timestamp with time zone default now(),
+  primary key (story_id, user_id)
 );
 
 -- Conversations
@@ -155,6 +183,8 @@ ALTER TABLE public.likes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.story_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.story_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conversation_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
@@ -185,6 +215,11 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "Stories are viewable by everyone" ON public.stories;
   DROP POLICY IF EXISTS "Users can create own stories" ON public.stories;
   DROP POLICY IF EXISTS "Users can delete own stories" ON public.stories;
+  DROP POLICY IF EXISTS "Story reactions are viewable by everyone" ON public.story_reactions;
+  DROP POLICY IF EXISTS "Users can react to stories" ON public.story_reactions;
+  DROP POLICY IF EXISTS "Users can remove own reactions" ON public.story_reactions;
+  DROP POLICY IF EXISTS "Story views are viewable by story owner" ON public.story_views;
+  DROP POLICY IF EXISTS "Users can mark stories as viewed" ON public.story_views;
   DROP POLICY IF EXISTS "Users can view own conversations" ON public.conversations;
   DROP POLICY IF EXISTS "Users can create conversations" ON public.conversations;
   DROP POLICY IF EXISTS "Users can view participants of own conversations" ON public.conversation_participants;
@@ -258,6 +293,23 @@ CREATE POLICY "Users can create own stories"
   ON public.stories FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete own stories"
   ON public.stories FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies: Story reactions
+CREATE POLICY "Story reactions are viewable by everyone"
+  ON public.story_reactions FOR SELECT USING (true);
+CREATE POLICY "Users can react to stories"
+  ON public.story_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can remove own reactions"
+  ON public.story_reactions FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies: Story views
+CREATE POLICY "Story views are viewable by story owner"
+  ON public.story_views FOR SELECT
+  USING (exists (
+    select 1 from public.stories where id = story_views.story_id and user_id = auth.uid()
+  ));
+CREATE POLICY "Users can mark stories as viewed"
+  ON public.story_views FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- RLS Policies: Conversations
 CREATE POLICY "Users can view own conversations"
@@ -361,3 +413,54 @@ begin
   update public.posts set comments_count = GREATEST(comments_count - 1, 0) where id = post_id;
 end;
 $$ language plpgsql security definer;
+
+-- Story reaction count functions
+create or replace function public.increment_story_reactions(story_id uuid)
+returns void as $$
+begin
+  update public.stories set reaction_count = reaction_count + 1 where id = story_id;
+end;
+$$ language plpgsql security definer;
+
+create or replace function public.decrement_story_reactions(story_id uuid)
+returns void as $$
+begin
+  update public.stories set reaction_count = GREATEST(reaction_count - 1, 0) where id = story_id;
+end;
+$$ language plpgsql security definer;
+
+-- Story view count function
+create or replace function public.increment_story_views(story_id uuid)
+returns void as $$
+begin
+  update public.stories set view_count = view_count + 1 where id = story_id;
+end;
+$$ language plpgsql security definer;
+
+-- GRANTs for authenticated users
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.posts TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.comments TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.likes TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.bookmarks TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.follows TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.stories TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.story_reactions TO authenticated;
+GRANT SELECT, INSERT ON public.story_views TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.conversations TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.conversation_participants TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.notifications TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.communities TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.community_members TO authenticated;
+
+-- GRANTs for anon (public read)
+GRANT SELECT ON public.profiles TO anon;
+GRANT SELECT ON public.posts TO anon;
+GRANT SELECT ON public.comments TO anon;
+GRANT SELECT ON public.stories TO anon;
+GRANT SELECT ON public.story_reactions TO anon;
+GRANT SELECT ON public.story_views TO anon;
+GRANT SELECT ON public.follows TO anon;
+GRANT SELECT ON public.communities TO anon;
+GRANT SELECT ON public.community_members TO anon;

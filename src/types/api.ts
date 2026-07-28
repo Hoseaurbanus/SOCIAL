@@ -41,11 +41,60 @@ export interface Comment {
 export interface Story {
   id: string
   user_id: string
-  media_url: string
-  media_type: 'image' | 'video'
+  media_url?: string | null
+  media_type: 'image' | 'video' | 'text'
+  text_content?: string | null
+  background_style?: {
+    type: 'gradient' | 'solid' | 'image'
+    value: string
+  } | null
+  text_color?: string
+  font_style?: 'sans' | 'serif' | 'mono' | 'display'
+  music_url?: string | null
+  music_title?: string | null
+  stickers?: StorySticker[]
+  text_overlays?: TextOverlay[]
   created_at: string
   expires_at: string
   user: Pick<User, 'id' | 'name' | 'username' | 'avatar'>
+  view_count?: number
+  reaction_count?: number
+  has_reacted?: boolean
+  has_viewed?: boolean
+}
+
+export interface StorySticker {
+  id: string
+  type: 'emoji' | 'gif' | 'poll' | 'link'
+  content: string
+  x: number
+  y: number
+  scale: number
+  rotation: number
+}
+
+export interface TextOverlay {
+  id: string
+  text: string
+  x: number
+  y: number
+  color: string
+  fontSize: number
+  fontWeight: 'normal' | 'bold'
+}
+
+export interface StoryReaction {
+  id: string
+  story_id: string
+  user_id: string
+  emoji: string
+  created_at: string
+}
+
+export interface StoryView {
+  story_id: string
+  user_id: string
+  viewed_at: string
 }
 
 export interface Message {
