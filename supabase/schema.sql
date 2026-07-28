@@ -331,3 +331,33 @@ begin
   update public.communities set member_count = GREATEST(member_count - 1, 0) where id = community_id;
 end;
 $$ language plpgsql security definer;
+
+-- Like count functions
+create or replace function public.increment_likes(post_id uuid)
+returns void as $$
+begin
+  update public.posts set likes_count = likes_count + 1 where id = post_id;
+end;
+$$ language plpgsql security definer;
+
+create or replace function public.decrement_likes(post_id uuid)
+returns void as $$
+begin
+  update public.posts set likes_count = GREATEST(likes_count - 1, 0) where id = post_id;
+end;
+$$ language plpgsql security definer;
+
+-- Comment count functions
+create or replace function public.increment_comments(post_id uuid)
+returns void as $$
+begin
+  update public.posts set comments_count = comments_count + 1 where id = post_id;
+end;
+$$ language plpgsql security definer;
+
+create or replace function public.decrement_comments(post_id uuid)
+returns void as $$
+begin
+  update public.posts set comments_count = GREATEST(comments_count - 1, 0) where id = post_id;
+end;
+$$ language plpgsql security definer;

@@ -5,8 +5,9 @@ import { Stories } from '@/components/molecules/stories'
 import { Button } from '@/components/atoms/button'
 import { SkeletonPost } from '@/components/atoms/skeleton'
 import { ComposeModal } from '@/components/organisms/compose-modal'
+import { StoryViewer } from '@/components/organisms/story-viewer'
 import { cn } from '@/lib/utils'
-import { useFeedPosts, useFollowingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
+import { useFeedPosts, useFollowingPosts, useTrendingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
 import { useStories, useCreateStory } from '@/hooks/use-stories'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
@@ -23,13 +24,15 @@ const tabs = [
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('for-you')
   const [showCompose, setShowCompose] = useState(false)
+  const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null)
   const user = useAuthStore((s) => s.user)
   const feedQuery = useFeedPosts()
   const followingQuery = useFollowingPosts()
+  const trendingQuery = useTrendingPosts()
   const { data: stories = [] } = useStories()
   const createStory = useCreateStory()
 
-  const activeQuery = activeTab === 'following' ? followingQuery : feedQuery
+  const activeQuery = activeTab === 'following' ? followingQuery : activeTab === 'trending' ? trendingQuery : feedQuery
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeQuery
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
@@ -58,6 +61,18 @@ export default function HomePage() {
       onError: () => toast({ title: 'Something went wrong', variant: 'error' }),
     })
   }, [toggleBookmark, toast])
+
+  const handleShare = useCallback((postId: string) => {
+    const url = `${window.location.origin}/home?post=${postId}`
+    if (navigator.share) {
+      navigator.share({ url }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(url).then(
+        () => toast({ title: 'Link copied!', variant: 'success' }),
+        () => toast({ title: 'Failed to copy link', variant: 'error' }),
+      )
+    }
+  }, [toast])
 
   const refetch = activeQuery.refetch
 
@@ -122,28 +137,37 @@ export default function HomePage() {
         </div>
       )}
       {/* Feed Tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b border-border scrollbar-none sticky top-16 bg-bg-primary z-10">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2',
-              activeTab === tab.id
-                ? 'border-accent text-accent'
-                : 'border-transparent text-text-secondary hover:text-text-primary'
-            )}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="relative border-b border-border sticky top-16 bg-bg-primary z-10">
+        <div className="flex gap-1 overflow-x-auto scrollbar-none" role="tablist" aria-label="Feed filters">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                'flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2',
+                activeTab === tab.id
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-text-secondary hover:text-text-primary'
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-bg-primary to-transparent pointer-events-none md:hidden" />
       </div>
 
       {/* Stories */}
       <Stories
         stories={stories.map((s) => ({ id: s.id, username: s.user.username, avatar: s.user.avatar, seen: false }))}
-        onStoryClick={() => {}}
+        onStoryClick={(id) => {
+          const idx = stories.findIndex((s) => s.id === id)
+          if (idx >= 0) setViewingStoryIndex(idx)
+        }}
+        userAvatar={user?.avatar}
         onAddStory={async () => {
           const input = document.createElement('input')
           input.type = 'file'
@@ -224,7 +248,7 @@ export default function HomePage() {
               saved={!!bookmarkedMap?.[post.id]}
               onLike={() => handleLike(post.id)}
               onComment={() => {}}
-              onShare={() => {}}
+              onShare={() => handleShare(post.id)}
               onSave={() => handleBookmark(post.id)}
               onDelete={() => deletePostMutation.mutate(post.id)}
             />
@@ -240,6 +264,9 @@ export default function HomePage() {
       )}
 
       <ComposeModal isOpen={showCompose} onClose={() => setShowCompose(false)} />
+      {viewingStoryIndex !== null && (
+        <StoryViewer stories={stories} initialIndex={viewingStoryIndex} onClose={() => setViewingStoryIndex(null)} />
+      )}
     </div>
   )
 }

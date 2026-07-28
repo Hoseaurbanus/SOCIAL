@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
 import { Card } from '@/components/molecules/card'
@@ -44,9 +45,11 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
       <div className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <Avatar src={author.avatar} alt={author.name} />
+            <Link to={`/profile/${author.username}`}>
+              <Avatar src={author.avatar} alt={author.name} />
+            </Link>
             <div>
-              <div className="font-semibold text-text-primary">{author.name}</div>
+              <Link to={`/profile/${author.username}`} className="font-semibold text-text-primary hover:underline">{author.name}</Link>
               <div className="text-sm text-text-secondary">
                 {community && <span>in {community} · </span>}{timeAgo(timestamp)}
               </div>
@@ -126,10 +129,12 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {postComments.map((comment) => (
                   <div key={comment.id} className="flex gap-3">
-                    <Avatar src={comment.user.avatar} alt={comment.user.name} size="sm" />
+                    <Link to={`/profile/${comment.user.username}`}>
+                      <Avatar src={comment.user.avatar} alt={comment.user.name} size="sm" />
+                    </Link>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-text-primary">{comment.user.name}</span>
+                        <Link to={`/profile/${comment.user.username}`} className="text-sm font-semibold text-text-primary hover:underline">{comment.user.name}</Link>
                         <span className="text-xs text-text-tertiary">@{comment.user.username}</span>
                         <span className="text-xs text-text-tertiary">·</span>
                         <span className="text-xs text-text-tertiary">{timeAgo(comment.created_at)}</span>
@@ -149,6 +154,7 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
                 onChange={(e) => setCommentText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
                 placeholder="Write a comment..."
+                aria-label="Write a comment"
                 className="flex-1 px-3 py-2 text-sm bg-bg-secondary border border-border rounded-full text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent"
               />
               <button

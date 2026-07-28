@@ -226,3 +226,18 @@ export async function fetchUserReplies(userId: string) {
   if (error) throw error
   return (data || []) as any[]
 }
+
+export async function fetchTrendingPosts(page = 1, pageSize = 20) {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
+    .from('posts')
+    .select('*, user:profiles(id, name, username, avatar)', { count: 'exact' })
+    .order('likes_count', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) throw error
+  return { posts: (data || []) as Post[], total: count || 0 }
+}

@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, deletePost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment, fetchLikedPosts, fetchBookmarkedPosts, fetchUserReplies } from '@/api/posts'
+import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, deletePost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment, fetchLikedPosts, fetchBookmarkedPosts, fetchUserReplies, fetchTrendingPosts } from '@/api/posts'
 
 export function useFeedPosts() {
   return useInfiniteQuery({
@@ -16,6 +16,17 @@ export function useFollowingPosts() {
   return useInfiniteQuery({
     queryKey: ['posts', 'following'],
     queryFn: ({ pageParam = 1 }) => fetchFollowingPosts(pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
+    },
+    initialPageParam: 1,
+  })
+}
+
+export function useTrendingPosts() {
+  return useInfiniteQuery({
+    queryKey: ['posts', 'trending'],
+    queryFn: ({ pageParam = 1 }) => fetchTrendingPosts(pageParam),
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
     },
@@ -50,8 +61,26 @@ export function useToggleLike() {
   return useMutation({
     mutationFn: toggleLike,
     onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ['likes'] })
       await queryClient.cancelQueries({ queryKey: ['posts'] })
-      return { postId }
+
+      const previousPosts = queryClient.getQueryData(['posts'])
+
+      queryClient.setQueriesData<Record<string, boolean>>({ queryKey: ['likes'] }, (old) => {
+        if (!old) return { [postId]: true }
+        return { ...old, [postId]: !old[postId] }
+      })
+
+      return { previousPosts }
+    },
+    onError: (_err, _postId, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(['posts'], context.previousPosts)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['likes'] })
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
     },
   })
 }
@@ -60,7 +89,19 @@ export function useToggleBookmark() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: toggleBookmark,
-    onSuccess: () => {
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ['bookmarks'] })
+      await queryClient.cancelQueries({ queryKey: ['posts'] })
+
+      queryClient.setQueriesData<Record<string, boolean>>({ queryKey: ['bookmarks'] }, (old) => {
+        if (!old) return { [postId]: true }
+        return { ...old, [postId]: !old[postId] }
+      })
+
+      return {}
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
       queryClient.invalidateQueries({ queryKey: ['posts'] })
     },
   })

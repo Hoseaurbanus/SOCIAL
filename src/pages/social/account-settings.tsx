@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
@@ -24,6 +24,16 @@ export default function AccountSettingsPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (profile) {
+      setName(profile.name || '')
+      setUsername(profile.username || '')
+      setBio(profile.bio || '')
+      setWebsite(profile.website || '')
+      setLocation(profile.location || '')
+    }
+  }, [profile])
 
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
