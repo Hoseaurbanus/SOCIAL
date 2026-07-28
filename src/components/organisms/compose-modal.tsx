@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { X, Image, Smile, MapPin } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
+import { EmojiPicker } from '@/components/molecules/emoji-picker'
 import { useCreatePost } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
@@ -18,6 +19,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
   const [error, setError] = useState('')
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
+  const [showEmoji, setShowEmoji] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const createPost = useCreatePost()
@@ -109,6 +111,23 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
     }
   }
 
+  const handleEmojiSelect = (emoji: string) => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const newContent = content.slice(0, start) + emoji + content.slice(end)
+      setContent(newContent)
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + emoji.length
+        textarea.focus()
+      }, 0)
+    } else {
+      setContent((prev) => prev + emoji)
+    }
+    setShowEmoji(false)
+  }
+
   if (!isOpen) return null
 
   return (
@@ -172,21 +191,28 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-          <div className="flex items-center gap-1">
-            <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add image">
-              <Image className="h-5 w-5" />
-            </button>
-            <button className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add emoji">
-              <Smile className="h-5 w-5" />
-            </button>
-            <button className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add location">
-              <MapPin className="h-5 w-5" />
-            </button>
+        <div className="relative">
+          {showEmoji && (
+            <div className="absolute bottom-full left-4 mb-2">
+              <EmojiPicker onSelect={handleEmojiSelect} />
+            </div>
+          )}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+            <div className="flex items-center gap-1">
+              <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add image">
+                <Image className="h-5 w-5" />
+              </button>
+              <button onClick={() => setShowEmoji(!showEmoji)} className={cn('p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors', showEmoji && 'bg-accent/10')} aria-label="Add emoji">
+                <Smile className="h-5 w-5" />
+              </button>
+              <button className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add location">
+                <MapPin className="h-5 w-5" />
+              </button>
+            </div>
+            <span className={cn('text-sm', content.length > 450 ? 'text-red-500' : 'text-text-tertiary')}>
+              {content.length}/500
+            </span>
           </div>
-          <span className={cn('text-sm', content.length > 450 ? 'text-red-500' : 'text-text-tertiary')}>
-            {content.length}/500
-          </span>
         </div>
       </div>
       <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
