@@ -1,5 +1,5 @@
 import { supabase } from '@/config/supabase'
-import type { Post } from '@/types/api'
+import type { Post, LinkPreview } from '@/types/api'
 
 export async function fetchFeedPosts(page = 1, pageSize = 20) {
   const from = (page - 1) * pageSize
@@ -69,13 +69,18 @@ export async function fetchFollowingPosts(page = 1, pageSize = 20) {
   return { posts: (data || []) as Post[], total: count || 0 }
 }
 
-export async function createPost(content: string, images?: string[]) {
+export async function createPost(content: string, images?: string[], videoUrl?: string, linkPreview?: LinkPreview) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
+  const insertData: Record<string, any> = { user_id: user.id, content }
+  if (images && images.length > 0) insertData.images = images
+  if (videoUrl) insertData.video_url = videoUrl
+  if (linkPreview) insertData.link_preview = linkPreview
+
   const { data, error } = await supabase
     .from('posts')
-    .insert({ user_id: user.id, content, images })
+    .insert(insertData)
     .select('*, user:profiles(id, name, username, avatar)')
     .single()
 

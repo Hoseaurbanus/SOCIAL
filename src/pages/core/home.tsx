@@ -239,6 +239,8 @@ export default function HomePage() {
               author={post.user}
               content={post.content}
               images={post.images}
+              videoUrl={post.video_url}
+              linkPreview={post.link_preview}
               timestamp={post.created_at}
               likes={post.likes_count}
               comments={post.comments_count}

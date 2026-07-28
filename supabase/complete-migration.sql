@@ -195,3 +195,9 @@ BEGIN
   DELETE FROM public.story_reactions WHERE story_id NOT IN (SELECT id FROM public.stories);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
+-- POSTS: Add video + link preview support
+-- ============================================================
+ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS video_url text;
+ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS link_preview jsonb;

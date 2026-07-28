@@ -17,11 +17,21 @@ export interface User {
   updated_at: string
 }
 
+export interface LinkPreview {
+  url: string
+  title: string
+  description: string
+  image: string
+  domain: string
+}
+
 export interface Post {
   id: string
   user_id: string
   content: string
   images?: string[]
+  video_url?: string | null
+  link_preview?: LinkPreview | null
   likes_count: number
   comments_count: number
   shares_count: number

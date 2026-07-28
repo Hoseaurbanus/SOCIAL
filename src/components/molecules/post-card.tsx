@@ -5,18 +5,19 @@ import { Avatar } from '@/components/atoms/avatar'
 import { cn } from '@/lib/utils'
 import { timeAgo } from '@/lib/timeago'
 import { usePostComments, useAddComment } from '@/hooks/use-posts'
+import type { LinkPreview } from '@/types/api'
 
 interface PostCardProps {
   postId?: string
   isOwnPost?: boolean
   author: { name: string; username: string; avatar?: string }
-  community?: string; content: string; images?: string[]; timestamp: string
+  community?: string; content: string; images?: string[]; videoUrl?: string | null; linkPreview?: LinkPreview | null; timestamp: string
   likes: number; comments: number; liked?: boolean; saved?: boolean
   onLike?: () => void; onComment?: () => void; onShare?: () => void; onSave?: () => void
   onDelete?: () => void
 }
 
-export function PostCard({ postId, isOwnPost, author, community, content, images, timestamp, likes, comments, liked = false, saved = false, onLike, onComment, onShare, onSave, onDelete }: PostCardProps) {
+export function PostCard({ postId, isOwnPost, author, community, content, images, videoUrl, linkPreview, timestamp, likes, comments, liked = false, saved = false, onLike, onComment, onShare, onSave, onDelete }: PostCardProps) {
   const [showComments, setShowComments] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [commentText, setCommentText] = useState('')
@@ -92,6 +93,25 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
               <img key={i} src={img} alt={`Post image ${i + 1}`} className="w-full h-auto object-cover max-h-96" loading="lazy" />
             ))}
           </div>
+        )}
+        {videoUrl && (
+          <div className="mt-3 rounded-2xl overflow-hidden">
+            <video src={videoUrl} controls playsInline className="w-full max-h-[512px] object-contain bg-black" />
+          </div>
+        )}
+        {linkPreview && (
+          <a href={linkPreview.url} target="_blank" rel="noopener noreferrer" className="mt-3 block rounded-2xl border border-border overflow-hidden hover:bg-bg-secondary transition-colors">
+            <div className="flex">
+              {linkPreview.image && (
+                <img src={linkPreview.image} alt="" className="w-32 h-32 object-cover flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0 p-3">
+                <p className="text-xs text-text-tertiary truncate">{linkPreview.domain}</p>
+                <p className="text-sm font-medium text-text-primary line-clamp-2 mt-0.5">{linkPreview.title}</p>
+                {linkPreview.description && <p className="text-xs text-text-secondary line-clamp-2 mt-1">{linkPreview.description}</p>}
+              </div>
+            </div>
+          </a>
         )}
       </div>
 

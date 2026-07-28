@@ -49,7 +49,8 @@ export function useUserPosts(userId: string) {
 export function useCreatePost() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ content, images }: { content: string; images?: string[] }) => createPost(content, images),
+    mutationFn: ({ content, images, videoUrl, linkPreview }: { content: string; images?: string[]; videoUrl?: string; linkPreview?: any }) =>
+      createPost(content, images, videoUrl, linkPreview),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] })
     },
