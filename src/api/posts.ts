@@ -11,9 +11,14 @@ export async function fetchFeedPosts(page = 1, pageSize = 20) {
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  if (error) throw error
+  if (error) {
+    if (error.code === '42P01' || error.code === '42501' || error.code === 'PGRST301') return { posts: [], total: 0 }
+    throw error
+  }
   return { posts: (data || []) as Post[], total: count || 0 }
 }
+
+const TABLE_MISSING = ['42P01', '42501', 'PGRST301']
 
 export async function fetchPostsByUser(userId: string, page = 1, pageSize = 20) {
   const from = (page - 1) * pageSize
@@ -26,7 +31,10 @@ export async function fetchPostsByUser(userId: string, page = 1, pageSize = 20) 
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  if (error) throw error
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return { posts: [], total: 0 }
+    throw error
+  }
   return { posts: (data || []) as Post[], total: count || 0 }
 }
 
@@ -34,10 +42,12 @@ export async function fetchFollowingPosts(page = 1, pageSize = 20) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  const { data: follows } = await supabase
+  const { data: follows, error: followError } = await supabase
     .from('follows')
     .select('following_id')
     .eq('follower_id', user.id)
+
+  if (followError && TABLE_MISSING.includes(followError.code)) return { posts: [], total: 0 }
 
   const followingIds = follows?.map((f) => f.following_id) || []
   if (followingIds.length === 0) return { posts: [], total: 0 }
@@ -52,7 +62,10 @@ export async function fetchFollowingPosts(page = 1, pageSize = 20) {
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  if (error) throw error
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return { posts: [], total: 0 }
+    throw error
+  }
   return { posts: (data || []) as Post[], total: count || 0 }
 }
 
@@ -124,7 +137,10 @@ export async function fetchPostComments(postId: string) {
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
 
-  if (error) throw error
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return []
+    throw error
+  }
   return data || []
 }
 
@@ -148,12 +164,13 @@ export async function checkLikeStatus(postIds: string[]) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return {}
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('likes')
     .select('post_id')
     .eq('user_id', user.id)
     .in('post_id', postIds)
 
+  if (error && TABLE_MISSING.includes(error.code)) return {}
   const liked: Record<string, boolean> = {}
   data?.forEach((l) => { liked[l.post_id] = true })
   return liked
@@ -163,12 +180,13 @@ export async function checkBookmarkStatus(postIds: string[]) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return {}
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('bookmarks')
     .select('post_id')
     .eq('user_id', user.id)
     .in('post_id', postIds)
 
+  if (error && TABLE_MISSING.includes(error.code)) return {}
   const bookmarked: Record<string, boolean> = {}
   data?.forEach((b) => { bookmarked[b.post_id] = true })
   return bookmarked
@@ -223,7 +241,10 @@ export async function fetchUserReplies(userId: string) {
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
-  if (error) throw error
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return []
+    throw error
+  }
   return (data || []) as any[]
 }
 
@@ -238,6 +259,9 @@ export async function fetchTrendingPosts(page = 1, pageSize = 20) {
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  if (error) throw error
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return { posts: [], total: 0 }
+    throw error
+  }
   return { posts: (data || []) as Post[], total: count || 0 }
 }
