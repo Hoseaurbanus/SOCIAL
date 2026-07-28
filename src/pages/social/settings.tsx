@@ -48,7 +48,7 @@ export default function SettingsPage() {
         <div className="px-4 pt-4 pb-2">
           <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider">Account</h3>
         </div>
-        <SettingsItem icon={<User className="h-5 w-5" />} label="Account" description="Name, email, username" onClick={() => {}} />
+        <SettingsItem icon={<User className="h-5 w-5" />} label="Account" description="Name, email, username" onClick={() => navigate('/settings/account')} />
 
         <div className="px-4 pt-4 pb-2">
           <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider">Privacy</h3>
@@ -63,14 +63,14 @@ export default function SettingsPage() {
         <div className="px-4 pt-4 pb-2">
           <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider">Preferences</h3>
         </div>
-        <SettingsItem icon={<Bell className="h-5 w-5" />} label="Notifications" description="Push, email, in-app" onClick={() => {}} />
-        <SettingsItem icon={<Sparkles className="h-5 w-5" />} label="AI Settings" description="Content recommendations" onClick={() => {}} />
-        <SettingsItem icon={<Palette className="h-5 w-5" />} label="Appearance" description="Theme, display" onClick={() => {}} />
+        <SettingsItem icon={<Bell className="h-5 w-5" />} label="Notifications" description="Push, email, in-app" onClick={() => navigate('/settings/notifications')} />
+        <SettingsItem icon={<Sparkles className="h-5 w-5" />} label="AI Settings" description="Content recommendations" disabled />
+        <SettingsItem icon={<Palette className="h-5 w-5" />} label="Appearance" description="Theme, display" onClick={() => navigate('/settings/appearance')} />
 
         <div className="px-4 pt-4 pb-2">
           <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider">Support</h3>
         </div>
-        <SettingsItem icon={<HelpCircle className="h-5 w-5" />} label="Help & Support" description="FAQ, contact us" onClick={() => {}} />
+        <SettingsItem icon={<HelpCircle className="h-5 w-5" />} label="Help & Support" description="FAQ, contact us" onClick={() => navigate('/settings/help')} />
         <SettingsItem icon={<LogOut className="h-5 w-5" />} label="Log Out" description="Sign out of your account" onClick={handleLogout} disabled={loggingOut} />
       </div>
     </div>
