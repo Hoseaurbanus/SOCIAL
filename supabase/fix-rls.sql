@@ -136,7 +136,21 @@ ALTER TABLE public.communities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_members ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
--- 3. DROP OLD POLICIES THEN RECREATE (safe to re-run)
+-- 3. HELPER FUNCTIONS (security definer to avoid recursive RLS)
+-- ============================================
+
+CREATE OR REPLACE FUNCTION public.user_in_conversation(conv_id uuid)
+RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.conversation_participants
+    WHERE conversation_id = conv_id AND user_id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- ============================================
+-- 4. DROP OLD POLICIES THEN RECREATE (safe to re-run)
 -- ============================================
 
 DO $$ BEGIN
@@ -251,11 +265,7 @@ CREATE POLICY "Users can create conversations"
 -- Conversation participants
 CREATE POLICY "Users can view participants of own conversations"
   ON public.conversation_participants FOR SELECT
-  USING (exists (
-    select 1 from public.conversation_participants cp
-    where cp.conversation_id = conversation_participants.conversation_id
-    and cp.user_id = auth.uid()
-  ));
+  USING (public.user_in_conversation(conversation_participants.conversation_id));
 CREATE POLICY "Users can add themselves to conversations"
   ON public.conversation_participants FOR INSERT
   WITH CHECK (auth.uid() = user_id);
@@ -297,7 +307,7 @@ CREATE POLICY "Users can leave communities"
   ON public.community_members FOR DELETE USING (auth.uid() = user_id);
 
 -- ============================================
--- 4. GRANT PERMISSIONS (critical - fixes 403 errors)
+-- 5. GRANT PERMISSIONS (critical - fixes 403 errors)
 -- ============================================
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
@@ -325,7 +335,7 @@ GRANT SELECT ON public.communities TO anon;
 GRANT SELECT ON public.community_members TO anon;
 
 -- ============================================
--- 5. RPC FUNCTIONS (like/comment counts)
+-- 6. RPC FUNCTIONS (like/comment counts)
 -- ============================================
 
 create or replace function public.increment_likes(post_id uuid)
