@@ -106,8 +106,8 @@ export default function SecurityPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-accent"
             />
-            {error && <div className="text-sm text-red-500">{error}</div>}
-            {success && <div className="text-sm text-green-500">{success}</div>}
+            {error && <div className="text-sm text-error">{error}</div>}
+            {success && <div className="text-sm text-success">{success}</div>}
             <div className="flex gap-2">
               <button
                 onClick={handleChangePassword}

@@ -190,7 +190,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
         {/* Compose Area */}
         <div className="flex-1 overflow-y-auto p-4">
           {error && (
-            <div role="alert" className="mb-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+            <div role="alert" className="mb-3 p-2 rounded-lg bg-error/10 border border-error/20 text-error text-sm">
               {error}
             </div>
           )}
@@ -255,7 +255,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
                 {loadingLocation ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" /> : <MapPin className="h-5 w-5" />}
               </button>
             </div>
-            <span className={cn('text-sm', content.length > 450 ? 'text-red-500' : 'text-text-tertiary')}>
+            <span className={cn('text-sm', content.length > 450 ? 'text-error' : 'text-text-tertiary')}>
               {content.length}/500
             </span>
           </div>

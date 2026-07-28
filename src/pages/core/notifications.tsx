@@ -6,11 +6,11 @@ import { Link } from 'react-router'
 import { timeAgo } from '@/lib/timeago'
 
 const iconMap = {
-  like: { icon: Heart, color: 'text-red-500', bg: 'bg-red-500/10' },
-  comment: { icon: MessageCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  follow: { icon: UserPlus, color: 'text-green-500', bg: 'bg-green-500/10' },
-  mention: { icon: AtSign, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-  message: { icon: MessageCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+  like: { icon: Heart, color: 'text-error', bg: 'bg-error/10' },
+  comment: { icon: MessageCircle, color: 'text-accent', bg: 'bg-accent/10' },
+  follow: { icon: UserPlus, color: 'text-success', bg: 'bg-success/10' },
+  mention: { icon: AtSign, color: 'text-warning', bg: 'bg-warning/10' },
+  message: { icon: MessageCircle, color: 'text-accent', bg: 'bg-accent/10' },
 }
 
 export default function NotificationsPage() {
