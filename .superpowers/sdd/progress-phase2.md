@@ -8,4 +8,4 @@
 - [x] Task 5: Persist privacy and security settings (commit clean, review clean)
 - [x] Task 6: Add error boundaries (commit 18cbb82, review clean)
 - [x] Task 7: Fix auth page consistency (commit clean, review clean)
-- [ ] Task 8: Add post delete and more options
+- [x] Task 8: Add post delete and more options (commit clean, review clean)

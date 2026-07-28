@@ -15,7 +15,7 @@ export default function ProfilePage() {
   const { data: followCounts } = useFollowCounts(profile?.id || '')
   const toggleFollow = useToggleFollow()
   const { data: isFollowing } = useFollowStatus(profile?.id ? [profile.id] : [])
-  const following = isFollowing?.[profile.id] || false
+  const following = profile ? (isFollowing?.[profile.id] || false) : false
   const { data: postsData, isLoading: postsLoading, error: postsError } = useUserPosts(profile?.id || '')
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
@@ -173,7 +173,7 @@ export default function ProfilePage() {
               <PostCard
                 key={post.id}
                 postId={post.id}
-                isOwnPost={isOwnProfile}
+                isOwnPost={!!isOwnProfile}
                 author={post.user}
                 content={post.content}
                 images={post.images}
