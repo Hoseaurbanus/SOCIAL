@@ -20,6 +20,8 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [showEmoji, setShowEmoji] = useState(false)
+  const [location, setLocation] = useState<string | null>(null)
+  const [loadingLocation, setLoadingLocation] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const createPost = useCreatePost()
@@ -45,6 +47,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
     setContent('')
     setError('')
     setSelectedImages([])
+    setLocation(null)
     onClose()
   }
 
@@ -128,6 +131,40 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
     setShowEmoji(false)
   }
 
+  const handleLocationClick = () => {
+    if (location) {
+      setLocation(null)
+      return
+    }
+    if (!navigator.geolocation) {
+      toast({ title: 'Geolocation not supported', variant: 'error' })
+      return
+    }
+    setLoadingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords
+          const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+          const data = await resp.json()
+          const city = data.address?.city || data.address?.town || data.address?.village || ''
+          const country = data.address?.country || ''
+          const loc = [city, country].filter(Boolean).join(', ')
+          setLocation(loc || `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`)
+        } catch {
+          const { latitude, longitude } = position.coords
+          setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`)
+        } finally {
+          setLoadingLocation(false)
+        }
+      },
+      () => {
+        setLoadingLocation(false)
+        toast({ title: 'Location access denied', variant: 'error' })
+      }
+    )
+  }
+
   if (!isOpen) return null
 
   return (
@@ -197,6 +234,15 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
               <EmojiPicker onSelect={handleEmojiSelect} />
             </div>
           )}
+          {location && (
+            <div className="px-4 py-2 border-t border-border flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-accent" />
+              <span className="text-sm text-text-secondary">{location}</span>
+              <button onClick={() => setLocation(null)} className="ml-auto text-text-tertiary hover:text-text-secondary">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <div className="flex items-center justify-between px-4 py-3 border-t border-border">
             <div className="flex items-center gap-1">
               <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add image">
@@ -205,8 +251,8 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
               <button onClick={() => setShowEmoji(!showEmoji)} className={cn('p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors', showEmoji && 'bg-accent/10')} aria-label="Add emoji">
                 <Smile className="h-5 w-5" />
               </button>
-              <button className="p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors" aria-label="Add location">
-                <MapPin className="h-5 w-5" />
+              <button onClick={handleLocationClick} disabled={loadingLocation} className={cn('p-2 rounded-full hover:bg-bg-tertiary text-accent transition-colors', location && 'bg-accent/10')} aria-label="Add location">
+                {loadingLocation ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" /> : <MapPin className="h-5 w-5" />}
               </button>
             </div>
             <span className={cn('text-sm', content.length > 450 ? 'text-red-500' : 'text-text-tertiary')}>
