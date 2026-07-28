@@ -32,7 +32,7 @@ CREATE POLICY "Story views are viewable by story owner"
 CREATE OR REPLACE FUNCTION public.get_story_views(p_story_id uuid)
 RETURNS TABLE (
   user_id uuid,
-  viewed_at timestamptown,
+  viewed_at timestamptz,
   user_name text,
   user_username text,
   user_avatar text
