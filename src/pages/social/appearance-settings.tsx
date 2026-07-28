@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { ChevronLeft, Sun, Moon, Monitor } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useUIStore } from '@/stores/ui-store'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -13,19 +13,8 @@ const themes: { id: Theme; label: string; icon: typeof Sun }[] = [
 
 export default function AppearanceSettingsPage() {
   const navigate = useNavigate()
-  const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem('theme') as Theme) || 'system'
-  })
-
-  useEffect(() => {
-    localStorage.setItem('theme', theme)
-    if (theme === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
-    } else {
-      document.documentElement.setAttribute('data-theme', theme)
-    }
-  }, [theme])
+  const theme = useUIStore((s) => s.theme)
+  const setTheme = useUIStore((s) => s.setTheme)
 
   return (
     <div>
