@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router'
 import { Header } from '@/components/organisms/header'
 import { BottomNav } from '@/components/organisms/bottom-nav'
+import { PwaInstallBanner } from '@/components/molecules/pwa-install-banner'
 
 export function AppLayout() {
   return (
@@ -13,6 +14,7 @@ export function AppLayout() {
         </div>
       </main>
       <BottomNav />
+      <PwaInstallBanner />
     </div>
   )
 }

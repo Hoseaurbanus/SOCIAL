@@ -1,0 +1,27 @@
+{
+  "name": "S.S — Digital Ecosystem",
+  "short_name": "S.S",
+  "description": "The world's most trusted, secure, and user-friendly digital ecosystem",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "theme_color": "#0D9488",
+  "background_color": "#0A0A0B",
+  "lang": "en",
+  "categories": ["social", "communication"],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
