@@ -4,8 +4,9 @@ import { z } from 'zod'
 import { useNavigate } from 'react-router'
 import { Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/config/supabase'
+import { cn } from '@/lib/utils'
 
 const passwordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -16,6 +17,21 @@ const passwordSchema = z.object({
 })
 type PasswordForm = z.infer<typeof passwordSchema>
 
+function getPasswordStrength(password: string): { score: number; label: string; color: string } {
+  let score = 0
+  if (password.length >= 8) score++
+  if (password.length >= 12) score++
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++
+  if (/\d/.test(password)) score++
+  if (/[^a-zA-Z0-9]/.test(password)) score++
+
+  if (score <= 1) return { score, label: 'Weak', color: 'bg-error' }
+  if (score <= 2) return { score, label: 'Fair', color: 'bg-orange-500' }
+  if (score <= 3) return { score, label: 'Good', color: 'bg-yellow-500' }
+  if (score <= 4) return { score, label: 'Strong', color: 'bg-green-500' }
+  return { score, label: 'Very strong', color: 'bg-success' }
+}
+
 export default function CreatePasswordPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
@@ -24,9 +40,12 @@ export default function CreatePasswordPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null)
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<PasswordForm>({
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
   })
+
+  const passwordValue = watch('password', '')
+  const strength = useMemo(() => getPasswordStrength(passwordValue), [passwordValue])
 
   useEffect(() => {
     const checkSession = async () => {
@@ -148,6 +167,24 @@ export default function CreatePasswordPage() {
           </div>
           {errors.password && (
             <p id="new-pw-error" className="mt-1.5 text-sm text-error">{errors.password.message}</p>
+          )}
+          {passwordValue.length > 0 && (
+            <div className="mt-2">
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'h-1 flex-1 rounded-full transition-colors',
+                      i <= strength.score ? strength.color : 'bg-bg-tertiary'
+                    )}
+                  />
+                ))}
+              </div>
+              <p className={cn('text-xs mt-1', strength.score <= 1 ? 'text-error' : strength.score <= 2 ? 'text-orange-500' : 'text-text-secondary')}>
+                {strength.label}
+              </p>
+            </div>
           )}
         </div>
         <div>
