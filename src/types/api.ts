@@ -9,6 +9,7 @@ export interface User {
   name: string
   username: string
   avatar?: string
+  cover_image?: string
   bio?: string
   website?: string
   location?: string

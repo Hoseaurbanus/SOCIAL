@@ -147,11 +147,15 @@ export default function ProfilePage() {
 
       {/* Banner */}
       <div className="relative h-40 bg-gradient-to-br from-accent via-accent-dark to-accent overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-4 left-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute bottom-4 right-8 w-40 h-40 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-white/5 blur-3xl" />
-        </div>
+        {profile.cover_image ? (
+          <img src={profile.cover_image} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-4 left-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute bottom-4 right-8 w-40 h-40 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-white/5 blur-3xl" />
+          </div>
+        )}
       </div>
 
       {/* Profile Info */}
