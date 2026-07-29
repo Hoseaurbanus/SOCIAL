@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router'
-import { ChevronLeft, Settings, MapPin, LinkIcon, Calendar } from 'lucide-react'
+import { ChevronLeft, Settings, MapPin, LinkIcon, Calendar, X } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { PostCard } from '@/components/molecules/post-card'
-import { useProfile, useProfileById, useFollowCounts, useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
+import { useProfile, useProfileById, useFollowCounts, useToggleFollow, useFollowStatus, useFollowers, useFollowing } from '@/hooks/use-profile'
 import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost, useLikedPosts, useBookmarkedPosts, useUserReplies } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
@@ -30,7 +30,12 @@ export default function ProfilePage() {
   const toggleBookmark = useToggleBookmark()
   const deletePostMutation = useDeletePost()
   const [activeTab, setActiveTab] = useState('posts')
+  const [showFollowers, setShowFollowers] = useState(false)
+  const [showFollowing, setShowFollowing] = useState(false)
   const toast = useToast((s) => s.toast)
+
+  const { data: followersList } = useFollowers(showFollowers ? profile?.id || '' : '')
+  const { data: followingList } = useFollowing(showFollowing ? profile?.id || '' : '')
 
   const posts = postsData?.pages.flatMap((p) => p.posts) || []
   const totalPosts = postsData?.pages[0]?.total || 0
@@ -152,16 +157,48 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex gap-4 mt-3">
-          <button className="text-sm hover:underline" onClick={() => {}} aria-label={`${followCounts?.following || 0} following`}>
+          <button className="text-sm hover:underline" onClick={() => setShowFollowing(true)} aria-label={`${followCounts?.following || 0} following`}>
             <strong className="text-text-primary">{followCounts?.following || 0}</strong>{' '}
             <span className="text-text-tertiary">Following</span>
           </button>
-          <button className="text-sm hover:underline" onClick={() => {}} aria-label={`${followCounts?.followers || 0} followers`}>
+          <button className="text-sm hover:underline" onClick={() => setShowFollowers(true)} aria-label={`${followCounts?.followers || 0} followers`}>
             <strong className="text-text-primary">{followCounts?.followers || 0}</strong>{' '}
             <span className="text-text-tertiary">Followers</span>
           </button>
         </div>
       </div>
+
+      {/* Followers/Following Modal */}
+      {(showFollowers || showFollowing) && (
+        <div className="fixed inset-0 z-modal bg-overlay flex items-end sm:items-center justify-center" onClick={() => { setShowFollowers(false); setShowFollowing(false) }}>
+          <div className="bg-bg-primary rounded-t-2xl sm:rounded-2xl w-full max-w-md max-h-[70vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h3 className="font-semibold text-text-primary">{showFollowers ? 'Followers' : 'Following'}</h3>
+              <button onClick={() => { setShowFollowers(false); setShowFollowing(false) }} className="p-1 rounded-full hover:bg-bg-tertiary">
+                <X className="h-5 w-5 text-text-secondary" />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[60vh] divide-y divide-border">
+              {(showFollowers ? followersList : followingList)?.map((user) => (
+                <Link
+                  key={user.id}
+                  to={`/profile/${user.username}`}
+                  onClick={() => { setShowFollowers(false); setShowFollowing(false) }}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-bg-tertiary transition-colors"
+                >
+                  <Avatar src={user.avatar} alt={user.name} size="md" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-primary truncate">{user.name}</p>
+                    <p className="text-sm text-text-secondary truncate">@{user.username}</p>
+                  </div>
+                </Link>
+              )) || (
+                <p className="p-8 text-center text-text-secondary text-sm">No users to show</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-border">

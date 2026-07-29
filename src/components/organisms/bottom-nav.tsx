@@ -2,6 +2,7 @@ import { NavLink, useLocation } from 'react-router'
 import { Home, Compass, MessageCircle, Bell, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUnreadCount } from '@/hooks/use-notifications'
+import { useUnreadMessageCount } from '@/hooks/use-messages'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
 
 const navItems = [
@@ -14,6 +15,7 @@ const navItems = [
 
 export function BottomNav() {
   const { data: unreadCount = 0 } = useUnreadCount()
+  const { data: unreadMessages = 0 } = useUnreadMessageCount()
   const { direction, scrollY } = useScrollDirection(10)
   const location = useLocation()
 
@@ -35,7 +37,9 @@ export function BottomNav() {
         {navItems.map((item) => {
           const isActive = location.pathname === item.to ||
             (item.to === '/messages' && location.pathname.startsWith('/messages'))
-          const showNotificationBadge = item.to === '/notifications' && unreadCount > 0
+          const badgeCount = item.to === '/notifications' ? unreadCount :
+            item.to === '/messages' ? unreadMessages : 0
+          const showBadge = item.showBadge && badgeCount > 0
 
           return (
             <NavLink
@@ -63,10 +67,10 @@ export function BottomNav() {
                   >
                     <item.icon className={cn('h-5 w-5 transition-transform duration-200', isActive && 'scale-110')} />
 
-                    {/* Notification badge */}
-                    {showNotificationBadge && (
+                    {/* Badge */}
+                    {showBadge && (
                       <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center text-[10px] font-bold rounded-full bg-secondary text-white shadow-lg shadow-secondary/30">
-                        {unreadCount > 99 ? '99+' : unreadCount}
+                        {badgeCount > 99 ? '99+' : badgeCount}
                       </span>
                     )}
                   </div>

@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Search, Settings, Edit } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
@@ -11,6 +11,7 @@ export default function MessagesPage() {
   const { data: conversations, isLoading, error } = useConversations()
   const [search, setSearch] = useState('')
   const [showNewMessage, setShowNewMessage] = useState(false)
+  const navigate = useNavigate()
 
   useRealtimeConversations()
 
@@ -38,7 +39,7 @@ export default function MessagesPage() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h1 className="text-xl font-bold text-text-primary">Messages</h1>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" aria-label="Settings">
+          <Button variant="ghost" size="sm" aria-label="Settings" onClick={() => navigate('/settings')}>
             <Settings className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setShowNewMessage(true)} aria-label="New message">

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { TrendingUp, Users, Grid3X3, Compass, Plus, X } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { PostCard } from '@/components/molecules/post-card'
@@ -126,8 +127,12 @@ function TrendingTab() {
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
   const currentUser = useAuthStore((s) => s.user)
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
   const posts = postsData?.pages.flatMap((p) => p) || []
-  const postIds = posts.map((p) => p.id)
+  const filteredPosts = selectedTopic
+    ? posts.filter((p) => p.content?.toLowerCase().includes(selectedTopic.toLowerCase()))
+    : posts
+  const postIds = filteredPosts.map((p) => p.id)
   const { data: likedMap } = useLikeStatus(postIds)
   const { data: bookmarkedMap } = useBookmarkStatus(postIds)
 
@@ -142,8 +147,17 @@ function TrendingTab() {
         ) : topics && topics.length > 0 ? (
           <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2">
             {topics.map((t) => (
-              <button key={t.tag} className="px-3 py-1.5 text-sm text-text-secondary border border-border rounded-full whitespace-nowrap hover:bg-bg-tertiary transition-colors">
-                {t.tag} <span className="text-text-tertiary ml-1">({t.count})</span>
+              <button
+                key={t.tag}
+                onClick={() => setSelectedTopic(selectedTopic === t.tag ? null : t.tag)}
+                className={cn(
+                  'px-3 py-1.5 text-sm border rounded-full whitespace-nowrap transition-colors',
+                  selectedTopic === t.tag
+                    ? 'bg-accent text-white border-accent'
+                    : 'text-text-secondary border-border hover:bg-bg-tertiary'
+                )}
+              >
+                {t.tag} <span className={selectedTopic === t.tag ? 'text-white/70' : 'text-text-tertiary'}>({t.count})</span>
               </button>
             ))}
           </div>
@@ -171,7 +185,7 @@ function TrendingTab() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {posts.map((post) => (
+            {filteredPosts.map((post) => (
               <PostCard
                 key={post.id}
                 postId={post.id}
@@ -201,6 +215,7 @@ function PeopleTab() {
   const { data: users, isLoading } = useSuggestedUsers()
   const toggleFollow = useToggleFollow()
   const { data: followingMap } = useFollowStatus(users?.map((u) => u.id) || [])
+  const navigate = useNavigate()
 
   if (isLoading) {
     return (
@@ -224,7 +239,7 @@ function PeopleTab() {
         users.map((u) => {
           const isFollowing = followingMap?.[u.id] || false
           return (
-            <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-bg-tertiary transition-colors">
+            <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-bg-tertiary transition-colors cursor-pointer" onClick={() => navigate(`/profile/${u.username}`)}>
               <Avatar src={u.avatar} alt={u.name} size="md" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text-primary truncate">{u.name}</p>
@@ -234,7 +249,7 @@ function PeopleTab() {
               <Button
                 variant={isFollowing ? 'secondary' : 'primary'}
                 size="sm"
-                onClick={() => toggleFollow.mutate(u.id)}
+                onClick={(e) => { e.stopPropagation(); toggleFollow.mutate(u.id) }}
                 loading={toggleFollow.isPending}
               >
                 {isFollowing ? 'Following' : 'Follow'}

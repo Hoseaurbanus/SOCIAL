@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
@@ -89,7 +89,7 @@ function FollowStep() {
   const { data: followingMap } = useFollowStatus(users.map((u) => u.id))
   const currentUser = useAuthStore((s) => s.user)
 
-  useState(() => {
+  useEffect(() => {
     const loadUsers = async () => {
       const { data, error } = await supabase
         .from('profiles')
@@ -100,7 +100,7 @@ function FollowStep() {
       setLoading(false)
     }
     loadUsers()
-  })
+  }, [currentUser?.id])
 
   if (loading) {
     return (

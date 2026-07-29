@@ -31,6 +31,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(() => {
+    try { return localStorage.getItem('smugflex-remember') === 'true' } catch { return false }
+  })
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
 
   useEffect(() => {
@@ -158,7 +161,15 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="h-4 w-4 rounded border-border text-accent focus:ring-accent" />
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => {
+                    setRememberMe(e.target.checked)
+                    try { localStorage.setItem('smugflex-remember', String(e.target.checked)) } catch {}
+                  }}
+                  className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                />
                 <span className="text-sm text-text-secondary">Remember me</span>
               </label>
               <Link to="/forgot-password" className="text-sm font-medium text-accent hover:text-accent-hover transition-colors">

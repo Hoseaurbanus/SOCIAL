@@ -68,10 +68,10 @@ export default function HomePage() {
     })
   }, [toggleBookmark, toast])
 
-  const handleShare = useCallback((postId: string) => {
-    const url = `${window.location.origin}/home?post=${postId}`
+  const handleShare = useCallback((_postId: string) => {
+    const url = `${window.location.origin}/home`
     if (navigator.share) {
-      navigator.share({ url }).catch(() => {})
+      navigator.share({ url, title: 'Check out this post on SMUGFLEX' }).catch(() => {})
     } else {
       navigator.clipboard.writeText(url).then(
         () => toast({ title: 'Link copied!', variant: 'success' }),

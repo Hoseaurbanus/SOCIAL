@@ -75,10 +75,10 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
                   )}
                   {!isOwnPost && (
                     <button
-                      onClick={() => setShowMenu(false)}
+                      onClick={() => { setShowMenu(false); onShare?.() }}
                       className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2"
                     >
-                      Report post
+                      Copy link
                     </button>
                   )}
                 </div>

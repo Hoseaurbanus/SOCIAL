@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { Search, Bell, MessageCircle, X } from 'lucide-react'
 import { useUnreadCount } from '@/hooks/use-notifications'
 import { SmugflexLogo } from '@/components/atoms/smugflex-logo'
@@ -11,8 +11,10 @@ export function Header() {
   const { direction, isAtTop, scrollY } = useScrollDirection(5)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isHidden = direction === 'down' && scrollY > 100 && !isAtTop
   const isCompact = !isAtTop && !searchOpen
@@ -26,12 +28,23 @@ export function Header() {
   useEffect(() => {
     setSearchOpen(false)
     setSearchFocused(false)
+    setSearchQuery('')
   }, [location.pathname])
 
   const handleSearchToggle = () => {
     setSearchOpen(!searchOpen)
     if (searchOpen) {
       setSearchFocused(false)
+      setSearchQuery('')
+    }
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`)
+      setSearchOpen(false)
+      setSearchQuery('')
     }
   }
 
@@ -62,11 +75,13 @@ export function Header() {
           'flex-1 max-w-md mx-4 hidden md:block transition-all duration-300',
           searchOpen ? 'max-w-lg' : ''
         )}>
-          <div className="relative group">
+          <form onSubmit={handleSearchSubmit} className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary group-focus-within:text-accent transition-colors" />
             <input
               type="text"
               placeholder="Search SMUGFLEX..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className={cn(
                 'w-full h-10 pl-10 pr-4 rounded-2xl border-2 bg-bg-secondary text-text-primary text-sm',
                 'placeholder:text-text-tertiary transition-all duration-200',
@@ -75,18 +90,20 @@ export function Header() {
               )}
               aria-label="Search"
             />
-          </div>
+          </form>
         </div>
 
         {/* Search - Mobile */}
         {searchOpen && (
           <div className="flex-1 md:hidden px-2">
-            <div className="relative">
+            <form onSubmit={handleSearchSubmit} className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
               <input
                 ref={searchInputRef}
                 type="text"
                 placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
                 className={cn(
@@ -96,7 +113,7 @@ export function Header() {
                 )}
                 aria-label="Search"
               />
-            </div>
+            </form>
           </div>
         )}
 

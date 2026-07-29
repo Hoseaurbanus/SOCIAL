@@ -28,7 +28,6 @@ function SecurityItem({ icon, label, description, onClick }: SecurityItemProps) 
 export default function SecurityPage() {
   const navigate = useNavigate()
   const [showPasswordForm, setShowPasswordForm] = useState(false)
-  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -39,7 +38,7 @@ export default function SecurityPage() {
   const handleChangePassword = async () => {
     setError('')
     setSuccess('')
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       setError('All fields are required')
       toast({ title: 'All fields are required', variant: 'error' })
       return
@@ -49,9 +48,9 @@ export default function SecurityPage() {
       toast({ title: 'New passwords do not match', variant: 'error' })
       return
     }
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters')
-      toast({ title: 'Password must be at least 6 characters', variant: 'error' })
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters')
+      toast({ title: 'Password must be at least 8 characters', variant: 'error' })
       return
     }
     setIsLoading(true)
@@ -61,7 +60,6 @@ export default function SecurityPage() {
       setSuccess('Password updated successfully')
       toast({ title: 'Password updated successfully', variant: 'success' })
       setShowPasswordForm(false)
-      setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (e: any) {
@@ -85,13 +83,6 @@ export default function SecurityPage() {
         <SecurityItem icon={<Lock className="h-5 w-5" />} label="Change Password" description="Update your password regularly" onClick={() => setShowPasswordForm(!showPasswordForm)} />
         {showPasswordForm && (
           <div className="px-4 py-4 space-y-3">
-            <input
-              type="password"
-              placeholder="Current password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-accent"
-            />
             <input
               type="password"
               placeholder="New password"
@@ -124,6 +115,8 @@ export default function SecurityPage() {
                   setShowPasswordForm(false)
                   setError('')
                   setSuccess('')
+                  setNewPassword('')
+                  setConfirmPassword('')
                 }}
                 className="px-4 py-2 bg-bg-tertiary text-text-primary rounded-lg font-medium"
               >

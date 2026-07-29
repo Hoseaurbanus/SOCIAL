@@ -2,7 +2,7 @@ import { Settings, Heart, MessageCircle, UserPlus, AtSign } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { useNotifications, useMarkNotificationRead, useMarkAllRead } from '@/hooks/use-notifications'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { timeAgo } from '@/lib/timeago'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +18,7 @@ export default function NotificationsPage() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useNotifications()
   const markRead = useMarkNotificationRead()
   const markAllRead = useMarkAllRead()
+  const navigate = useNavigate()
 
   const notifications = data?.pages.flatMap((p) => p.notifications) || []
 
@@ -45,6 +46,7 @@ export default function NotificationsPage() {
       case 'like':
       case 'comment':
       case 'mention':
+        return notification.post_id ? `/home` : '/home'
       default:
         return '/home'
     }
@@ -65,7 +67,7 @@ export default function NotificationsPage() {
           <Button variant="ghost" size="sm" onClick={() => markAllRead.mutate()} className="rounded-xl text-sm font-medium">
             Mark all read
           </Button>
-          <Button variant="ghost" size="sm" aria-label="Settings" className="rounded-xl">
+          <Button variant="ghost" size="sm" aria-label="Settings" className="rounded-xl" onClick={() => navigate('/settings/notifications')}>
             <Settings className="h-5 w-5" />
           </Button>
         </div>
