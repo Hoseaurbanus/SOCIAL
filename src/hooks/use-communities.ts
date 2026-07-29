@@ -1,10 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchCommunities, createCommunity, joinCommunity, leaveCommunity } from '@/api/communities'
+import { fetchCommunities, createCommunity, joinCommunity, leaveCommunity, fetchCommunityById } from '@/api/communities'
 
 export function useCommunities() {
   return useQuery({
     queryKey: ['communities'],
     queryFn: fetchCommunities,
+  })
+}
+
+export function useCommunityById(communityId: string) {
+  return useQuery({
+    queryKey: ['communities', communityId],
+    queryFn: () => fetchCommunityById(communityId),
+    enabled: !!communityId,
   })
 }
 

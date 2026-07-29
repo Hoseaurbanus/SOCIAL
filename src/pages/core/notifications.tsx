@@ -46,7 +46,7 @@ export default function NotificationsPage() {
       case 'like':
       case 'comment':
       case 'mention':
-        return notification.post_id ? `/home` : '/home'
+        return notification.post_id ? `/post/${notification.post_id}` : '/home'
       default:
         return '/home'
     }

@@ -72,3 +72,28 @@ export async function leaveCommunity(communityId: string) {
 
   await supabase.rpc('decrement_community_members', { community_id: communityId })
 }
+
+export async function fetchCommunityById(communityId: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { data, error } = await supabase
+    .from('communities')
+    .select('*')
+    .eq('id', communityId)
+    .single()
+
+  if (error) throw error
+
+  let is_member = false
+  if (user) {
+    const { data: membership } = await supabase
+      .from('community_members')
+      .select('community_id')
+      .eq('community_id', communityId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    is_member = !!membership
+  }
+
+  return { ...data, is_member } as Community
+}

@@ -270,3 +270,17 @@ export async function fetchTrendingPosts(page = 1, pageSize = 20) {
   }
   return { posts: (data || []) as Post[], total: count || 0 }
 }
+
+export async function fetchPostById(postId: string) {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)')
+    .eq('id', postId)
+    .single()
+
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return null
+    throw error
+  }
+  return data as Post
+}

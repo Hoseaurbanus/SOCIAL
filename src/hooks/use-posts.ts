@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, deletePost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment, fetchLikedPosts, fetchBookmarkedPosts, fetchUserReplies, fetchTrendingPosts } from '@/api/posts'
+import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, deletePost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment, fetchLikedPosts, fetchBookmarkedPosts, fetchUserReplies, fetchTrendingPosts, fetchPostById } from '@/api/posts'
 
 export function useFeedPosts() {
   return useInfiniteQuery({
@@ -174,5 +174,13 @@ export function useUserReplies(userId: string) {
     queryKey: ['replies', userId],
     queryFn: () => fetchUserReplies(userId),
     enabled: !!userId,
+  })
+}
+
+export function usePostById(postId: string) {
+  return useQuery({
+    queryKey: ['posts', postId],
+    queryFn: () => fetchPostById(postId),
+    enabled: !!postId,
   })
 }

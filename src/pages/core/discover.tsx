@@ -270,6 +270,7 @@ function CommunitiesTab() {
   const leaveCommunity = useLeaveCommunity()
   const createCommunity = useCreateCommunity()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -358,7 +359,7 @@ function CommunitiesTab() {
       {communities && communities.length > 0 ? (
         <div className="space-y-2">
           {communities.map((c) => (
-            <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-bg-tertiary transition-colors">
+            <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-bg-tertiary transition-colors cursor-pointer" onClick={() => navigate(`/community/${c.id}`)}>
               <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center text-2xl flex-shrink-0">
                 {c.icon}
               </div>
@@ -370,7 +371,7 @@ function CommunitiesTab() {
               <Button
                 variant={c.is_member ? 'secondary' : 'primary'}
                 size="sm"
-                onClick={() => c.is_member ? leaveCommunity.mutate(c.id) : joinCommunity.mutate(c.id)}
+                onClick={(e) => { e.stopPropagation(); c.is_member ? leaveCommunity.mutate(c.id) : joinCommunity.mutate(c.id) }}
                 loading={joinCommunity.isPending || leaveCommunity.isPending}
               >
                 {c.is_member ? 'Joined' : 'Join'}
