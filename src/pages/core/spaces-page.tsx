@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
-import { motion } from 'framer-motion';
 import { Search, Loader2 } from 'lucide-react';
-import { useMySpaces, useSpaces } from '@/hooks/use-spaces';
+import { useMySpaces, useSpaces, useJoinSpace, useLeaveSpace } from '@/hooks/use-spaces';
+import { SpaceCard } from '@/components/molecules/space-card';
 import { EmptyState } from '@/components/molecules/empty-state';
 import { Input } from '@/components/atoms/input';
 import type { SpaceType } from '@/types/spaces';
 import { SPACE_TYPE_LABELS, SPACE_TYPE_ICONS } from '@/types/spaces';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SpacesPage() {
   const [search, setSearch] = useState('');
@@ -14,6 +14,9 @@ export default function SpacesPage() {
   
   const { data: mySpaces, isLoading: mySpacesLoading } = useMySpaces();
   const { data: allSpaces, isLoading: allSpacesLoading } = useSpaces();
+  const joinSpace = useJoinSpace();
+  const leaveSpace = useLeaveSpace();
+  const toast = useToast((s) => s.toast);
   
   const isLoading = mySpacesLoading || allSpacesLoading;
   
@@ -86,38 +89,20 @@ export default function SpacesPage() {
         ) : (
           <div className="space-y-3">
             {filteredSpaces.map(space => (
-              <motion.div
+              <SpaceCard
                 key={space.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <Link
-                  to={`/space/${space.slug}`}
-                  className="block p-4 rounded-2xl bg-bg-primary border border-border-primary hover:border-accent transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center text-2xl">
-                      {space.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-text-primary truncate">{space.name}</h3>
-                        {mySpaceIds.has(space.id) && (
-                          <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-medium">
-                            Joined
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-text-secondary mt-0.5">
-                        {SPACE_TYPE_LABELS[space.space_type]} · {space.member_count} members
-                      </p>
-                      {space.description && (
-                        <p className="text-sm text-text-tertiary mt-1 line-clamp-2">{space.description}</p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
+                space={space}
+                isMember={mySpaceIds.has(space.id)}
+                onJoin={() => joinSpace.mutate(space.id, {
+                  onSuccess: () => toast({ title: 'Joined space!', variant: 'success' }),
+                  onError: () => toast({ title: 'Failed to join space', variant: 'error' }),
+                })}
+                onLeave={() => leaveSpace.mutate(space.id, {
+                  onSuccess: () => toast({ title: 'Left space', variant: 'success' }),
+                  onError: () => toast({ title: 'Failed to leave space', variant: 'error' }),
+                })}
+                joinLoading={joinSpace.isPending || leaveSpace.isPending}
+              />
             ))}
           </div>
         )}

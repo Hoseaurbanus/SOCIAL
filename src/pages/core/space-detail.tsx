@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { ArrowLeft, Settings, Users, Loader2, Plus, Lock, Globe } from 'lucide-react';
 import { useSpace, useJoinSpace, useLeaveSpace, useSpaceMembers } from '@/hooks/use-spaces';
-import { useContentItems } from '@/hooks/use-content';
+import { useContentItems, useToggleReaction } from '@/hooks/use-content';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/atoms/button';
 import { EmptyState } from '@/components/molecules/empty-state';
@@ -20,6 +20,7 @@ export default function SpaceDetailPage() {
   });
   const joinMutation = useJoinSpace();
   const leaveMutation = useLeaveSpace();
+  const toggleReaction = useToggleReaction();
 
   if (spaceLoading) {
     return (
@@ -197,6 +198,7 @@ export default function SpaceDetailPage() {
                 <ContentCard
                   key={item.id}
                   item={item}
+                  onLike={() => toggleReaction.mutate({ contentItemId: item.id })}
                 />
               ))
             )}

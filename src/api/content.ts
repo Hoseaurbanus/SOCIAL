@@ -200,6 +200,52 @@ export async function checkReactionStatus(
   return reactionMap;
 }
 
+export async function fetchContentFeed(params: {
+  page?: number;
+  pageSize?: number;
+  userId: string;
+}): Promise<{ items: ContentItem[]; total: number }> {
+  const { page = 1, pageSize = 20, userId } = params;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  // Get joined space IDs
+  const { data: memberships } = await supabase
+    .from('space_members')
+    .select('space_id')
+    .eq('user_id', userId);
+
+  const spaceIds = memberships?.map(m => m.space_id) || [];
+
+  // Get followed user IDs
+  const { data: follows } = await supabase
+    .from('relationships')
+    .select('target_id')
+    .eq('source_user_id', userId)
+    .eq('relationship_type', 'follow');
+
+  const followedIds = follows?.map(f => f.target_id) || [];
+
+  if (spaceIds.length === 0 && followedIds.length === 0) {
+    return { items: [], total: 0 };
+  }
+
+  let query = supabase
+    .from('content_items')
+    .select('*, author:profiles!content_items_author_id_fkey(id, name, username, avatar)', { count: 'exact' })
+    .or(`space_id.in.(${spaceIds.join(',')}),author_id.in.(${followedIds.join(',')})`)
+    .order('created_at', { ascending: false });
+
+  const { data, error, count } = await query.range(from, to);
+
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return { items: [], total: 0 };
+    throw error;
+  }
+
+  return { items: data || [], total: count || 0 };
+}
+
 // ============================================================
 // Comments (comments_v2)
 // ============================================================

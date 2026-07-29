@@ -4,10 +4,11 @@ import { TrendingUp, Users, Grid3X3, Compass, Plus, X } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { PostCard } from '@/components/molecules/post-card'
 import { Avatar } from '@/components/atoms/avatar'
+import { SpaceCard } from '@/components/molecules/space-card'
 import { useTrendingPosts, useSuggestedUsers, useTrendingTopics } from '@/hooks/use-discover'
 import { useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus } from '@/hooks/use-posts'
 import { useToggleFollow, useFollowStatus } from '@/hooks/use-profile'
-import { useCommunities, useJoinCommunity, useLeaveCommunity, useCreateCommunity } from '@/hooks/use-communities'
+import { useSpaces, useMySpaces, useCreateSpace, useJoinSpace, useLeaveSpace } from '@/hooks/use-spaces'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -16,7 +17,7 @@ const tabs = [
   { id: 'discover', label: 'Discover', icon: Compass },
   { id: 'trending', label: 'Trending', icon: TrendingUp },
   { id: 'people', label: 'People', icon: Users },
-  { id: 'communities', label: 'Communities', icon: Grid3X3 },
+  { id: 'spaces', label: 'Spaces', icon: Grid3X3 },
 ]
 
 export default function DiscoverPage() {
@@ -48,7 +49,7 @@ export default function DiscoverPage() {
         {activeTab === 'discover' && <DiscoverTab />}
         {activeTab === 'trending' && <TrendingTab />}
         {activeTab === 'people' && <PeopleTab />}
-        {activeTab === 'communities' && <CommunitiesTab />}
+        {activeTab === 'spaces' && <SpacesTab />}
       </div>
     </div>
   )
@@ -264,31 +265,33 @@ function PeopleTab() {
   )
 }
 
-function CommunitiesTab() {
-  const { data: communities, isLoading } = useCommunities()
-  const joinCommunity = useJoinCommunity()
-  const leaveCommunity = useLeaveCommunity()
-  const createCommunity = useCreateCommunity()
+function SpacesTab() {
+  const { data: spacesData, isLoading } = useSpaces()
+  const { data: mySpaces } = useMySpaces()
+  const joinSpace = useJoinSpace()
+  const leaveSpace = useLeaveSpace()
+  const createSpace = useCreateSpace()
   const { toast } = useToast()
   const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [icon, setIcon] = useState('🌐')
+  const mySpaceIds = new Set(mySpaces?.map(s => s.id) || [])
 
   const handleCreate = () => {
     if (!name.trim()) return
-    createCommunity.mutate(
-      { name: name.trim(), description: description.trim(), icon },
+    createSpace.mutate(
+      { name: name.trim(), description: description.trim(), icon, spaceType: 'community', visibility: 'public' },
       {
         onSuccess: () => {
           setShowCreate(false)
           setName('')
           setDescription('')
           setIcon('🌐')
-          toast({ title: 'Community created!', variant: 'success' })
+          toast({ title: 'Space created!', variant: 'success' })
         },
-        onError: (err) => toast({ title: err.message || 'Failed to create community', variant: 'error' }),
+        onError: (err) => toast({ title: err.message || 'Failed to create space', variant: 'error' }),
       }
     )
   }
@@ -312,7 +315,7 @@ function CommunitiesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-text-primary">Communities</h3>
+        <h3 className="text-base font-semibold text-text-primary">Spaces</h3>
         <Button size="sm" onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1" /> Create
         </Button>
@@ -321,13 +324,13 @@ function CommunitiesTab() {
       {showCreate && (
         <div className="p-4 border border-border rounded-xl space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-text-primary">New Community</h4>
+            <h4 className="text-sm font-medium text-text-primary">New Space</h4>
             <button onClick={() => setShowCreate(false)} className="text-text-tertiary hover:text-text-secondary">
               <X className="h-4 w-4" />
             </button>
           </div>
           <div className="flex gap-2">
-            {['🌐', '💻', '🎨', '🎮', '📚', '音乐', '体育', '科技'].map((e) => (
+            {['🌐', '💻', '🎨', '🎮', '📚', '🎵', '⚽', '🔬'].map((e) => (
               <button
                 key={e}
                 onClick={() => setIcon(e)}
@@ -340,7 +343,7 @@ function CommunitiesTab() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Community name"
+            placeholder="Space name"
             maxLength={50}
             className="w-full bg-bg-secondary border-2 border-border rounded-2xl px-3 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-0 transition-colors"
           />
@@ -351,37 +354,27 @@ function CommunitiesTab() {
             rows={2}
             className="w-full bg-bg-secondary border-2 border-border rounded-2xl px-3 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-0 transition-colors resize-none"
           />
-          <Button fullWidth size="sm" loading={createCommunity.isPending} onClick={handleCreate} disabled={!name.trim()}>
-            Create Community
+          <Button fullWidth size="sm" loading={createSpace.isPending} onClick={handleCreate} disabled={!name.trim()}>
+            Create Space
           </Button>
         </div>
       )}
 
-      {communities && communities.length > 0 ? (
+      {spacesData?.spaces && spacesData.spaces.length > 0 ? (
         <div className="space-y-2">
-          {communities.map((c) => (
-            <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-bg-tertiary transition-colors cursor-pointer" onClick={() => navigate(`/community/${c.id}`)}>
-              <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center text-2xl flex-shrink-0">
-                {c.icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">{c.name}</p>
-                <p className="text-xs text-text-secondary">{c.member_count} members</p>
-                {c.description && <p className="text-xs text-text-tertiary truncate mt-0.5">{c.description}</p>}
-              </div>
-              <Button
-                variant={c.is_member ? 'secondary' : 'primary'}
-                size="sm"
-                onClick={(e) => { e.stopPropagation(); c.is_member ? leaveCommunity.mutate(c.id) : joinCommunity.mutate(c.id) }}
-                loading={joinCommunity.isPending || leaveCommunity.isPending}
-              >
-                {c.is_member ? 'Joined' : 'Join'}
-              </Button>
-            </div>
+          {spacesData.spaces.map((space) => (
+            <SpaceCard
+              key={space.id}
+              space={space}
+              isMember={mySpaceIds.has(space.id)}
+              onJoin={() => joinSpace.mutate(space.id)}
+              onLeave={() => leaveSpace.mutate(space.id)}
+              onClick={() => navigate(`/space/${space.slug}`)}
+            />
           ))}
         </div>
       ) : (
-        <p className="text-center text-text-secondary py-8">No communities yet. Create one!</p>
+        <p className="text-center text-text-secondary py-8">No spaces yet. Create one!</p>
       )}
     </div>
   )

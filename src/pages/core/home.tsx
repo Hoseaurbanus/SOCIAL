@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { LayoutGrid, Users, Grid3X3, Clock, Zap, RefreshCw } from 'lucide-react'
 import { PostCard } from '@/components/molecules/post-card'
+import { ContentCard } from '@/components/molecules/content-card'
 import { Stories } from '@/components/molecules/stories'
 import { Button } from '@/components/atoms/button'
 import { SkeletonPost } from '@/components/atoms/skeleton'
@@ -9,7 +10,8 @@ import { ComposeModal } from '@/components/organisms/compose-modal'
 import { StoryViewer } from '@/components/organisms/story-viewer'
 import { StoryCreator } from '@/components/organisms/story-creator'
 import { cn } from '@/lib/utils'
-import { useFeedPosts, useForYouPosts, useFollowingPosts, useTrendingPosts, useCommunityPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
+import { useFeedPosts, useForYouPosts, useFollowingPosts, useTrendingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
+import { useContentFeed, useToggleReaction } from '@/hooks/use-content'
 import { useStories, useCreateStory, useReplyToStory } from '@/hooks/use-stories'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
@@ -19,7 +21,7 @@ import type { StoryDraft } from '@/components/organisms/story-creator'
 const tabs = [
   { id: 'for-you', label: 'For You', icon: LayoutGrid },
   { id: 'following', label: 'Following', icon: Users },
-  { id: 'communities', label: 'Communities', icon: Grid3X3 },
+  { id: 'spaces', label: 'Spaces', icon: Grid3X3 },
   { id: 'chronological', label: 'Chronological', icon: Clock },
   { id: 'trending', label: 'Trending', icon: Zap },
 ]
@@ -35,13 +37,23 @@ export default function HomePage() {
   const forYouQuery = useForYouPosts()
   const followingQuery = useFollowingPosts()
   const trendingQuery = useTrendingPosts()
-  const communityQuery = useCommunityPosts()
+  const spacesFeedQuery = useContentFeed(user?.id || '')
+  const toggleReaction = useToggleReaction()
   const { data: stories = [], refetch: refetchStories } = useStories()
   const createStory = useCreateStory()
   const replyToStory = useReplyToStory()
 
-  const activeQuery = activeTab === 'for-you' ? forYouQuery : activeTab === 'following' ? followingQuery : activeTab === 'trending' ? trendingQuery : activeTab === 'communities' ? communityQuery : feedQuery
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeQuery
+  const isSpacesTab = activeTab === 'spaces'
+  const baseQuery = activeTab === 'for-you' ? forYouQuery : activeTab === 'following' ? followingQuery : activeTab === 'trending' ? trendingQuery : feedQuery
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = isSpacesTab
+    ? { data: spacesFeedQuery.data ? { pages: [spacesFeedQuery.data] } : undefined, isLoading: spacesFeedQuery.isLoading, error: spacesFeedQuery.error, fetchNextPage: () => {}, hasNextPage: false, isFetchingNextPage: false }
+    : baseQuery
+
+  const posts = isSpacesTab ? [] : (data?.pages.flatMap((p: any) => p.posts) || [])
+  const postIds = posts.map((p: any) => p.id)
+  const { data: likedMap } = useLikeStatus(postIds)
+  const { data: bookmarkedMap } = useBookmarkStatus(postIds)
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
   const deletePostMutation = useDeletePost()
@@ -52,11 +64,6 @@ export default function HomePage() {
   const startY = useRef(0)
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
-
-  const posts = data?.pages.flatMap((p) => p.posts) || []
-  const postIds = posts.map((p) => p.id)
-  const { data: likedMap } = useLikeStatus(postIds)
-  const { data: bookmarkedMap } = useBookmarkStatus(postIds)
 
   const handleLike = useCallback((postId: string) => {
     toggleLike.mutate(postId, {
@@ -82,7 +89,7 @@ export default function HomePage() {
     }
   }, [toast])
 
-  const refetch = activeQuery.refetch
+  const refetch = isSpacesTab ? spacesFeedQuery.refetch : baseQuery.refetch
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (containerRef.current && containerRef.current.scrollTop === 0) {
@@ -205,52 +212,32 @@ export default function HomePage() {
       </div>
 
       {/* Feed */}
-      {activeTab === 'communities' ? (
-        communityQuery.isLoading ? (
+      {activeTab === 'spaces' ? (
+        spacesFeedQuery.isLoading ? (
           <div className="divide-y divide-border">
             {[1, 2, 3].map((i) => (
               <SkeletonPost key={i} />
             ))}
           </div>
-        ) : posts.length === 0 ? (
+        ) : spacesFeedQuery.data?.items.length === 0 ? (
           <div className="p-12 text-center">
             <div className="h-16 w-16 rounded-3xl bg-accent-light flex items-center justify-center mx-auto mb-4">
               <Grid3X3 className="h-8 w-8 text-accent" />
             </div>
-            <p className="text-text-primary font-semibold mb-1">No community posts yet</p>
-            <p className="text-text-tertiary text-sm">Join communities to see posts from them here.</p>
+            <p className="text-text-primary font-semibold mb-1">No space posts yet</p>
+            <p className="text-text-tertiary text-sm">Join spaces to see posts from them here.</p>
           </div>
         ) : (
           <div className="divide-y divide-border" aria-live="polite">
-            {posts.map((post) => (
-              <PostCard
-                key={post.id}
-                postId={post.id}
-                isOwnPost={post.user_id === user?.id}
-                author={post.user}
-                content={post.content}
-                images={post.images}
-                videoUrl={post.video_url}
-                linkPreview={post.link_preview}
-                timestamp={post.created_at}
-                likes={post.likes_count}
-                comments={post.comments_count}
-                liked={!!likedMap?.[post.id]}
-                saved={!!bookmarkedMap?.[post.id]}
-                onLike={() => handleLike(post.id)}
-                onComment={() => {}}
-                onShare={() => handleShare(post.id)}
-                onSave={() => handleBookmark(post.id)}
-                onDelete={() => deletePostMutation.mutate(post.id)}
-              />
+            {spacesFeedQuery.data?.items.map((item) => (
+              <div key={item.id} className="p-4">
+                <ContentCard
+                  item={item}
+                  onLike={() => toggleReaction.mutate({ contentItemId: item.id })}
+                  isLiked={false}
+                />
+              </div>
             ))}
-            <div ref={loadMoreRef} className="py-4">
-              {isFetchingNextPage && (
-                <div className="flex justify-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent" />
-                </div>
-              )}
-            </div>
           </div>
         )
       ) : isLoading ? (

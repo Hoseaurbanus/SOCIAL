@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchContentItems,
   fetchContentItemById,
+  fetchContentFeed,
   createContentItem,
   updateContentItem,
   deleteContentItem,
@@ -21,6 +22,15 @@ export function useContentItems(params: {
     queryKey: ['content-items', params],
     queryFn: () => fetchContentItems(params),
     staleTime: 30000,
+  });
+}
+
+export function useContentFeed(userId: string) {
+  return useQuery({
+    queryKey: ['content-items', 'feed', userId],
+    queryFn: () => fetchContentFeed({ userId, pageSize: 50 }),
+    staleTime: 30000,
+    enabled: !!userId,
   });
 }
 

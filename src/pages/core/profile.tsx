@@ -4,8 +4,10 @@ import { ChevronLeft, Settings, MapPin, LinkIcon, Calendar, X, MessageCircle } f
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { PostCard } from '@/components/molecules/post-card'
+import { ContentCard } from '@/components/molecules/content-card'
 import { useProfile, useProfileById, useFollowCounts, useToggleFollow, useFollowStatus, useFollowers, useFollowing } from '@/hooks/use-profile'
 import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost, useLikedPosts, useBookmarkedPosts, useUserReplies } from '@/hooks/use-posts'
+import { useContentItems, useToggleReaction } from '@/hooks/use-content'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import { useCreateConversation } from '@/hooks/use-messages'
@@ -48,6 +50,8 @@ export default function ProfilePage() {
   const { data: likedPostsData, isLoading: likedLoading, fetchNextPage: fetchNextLiked, hasNextPage: hasNextLiked, isFetchingNextPage: isFetchingNextLiked } = useLikedPosts(profile?.id || '')
   const { data: bookmarkedPostsData, isLoading: bookmarkedLoading, fetchNextPage: fetchNextBookmarked, hasNextPage: hasNextBookmarked, isFetchingNextPage: isFetchingNextBookmarked } = useBookmarkedPosts(profile?.id || '')
   const { data: repliesData, isLoading: repliesLoading, fetchNextPage: fetchNextReplies, hasNextPage: hasNextReplies, isFetchingNextPage: isFetchingNextReplies } = useUserReplies(profile?.id || '')
+  const { data: contentData, isLoading: contentLoading } = useContentItems({ authorId: profile?.id || '' })
+  const toggleReaction = useToggleReaction()
 
   const likedPosts = likedPostsData?.pages.flatMap((p) => p.posts) || []
   const bookmarkedPosts = bookmarkedPostsData?.pages.flatMap((p) => p.posts) || []
@@ -245,7 +249,7 @@ export default function ProfilePage() {
       {/* Tabs */}
       <div className="border-b border-border">
         <div className="flex" role="tablist" aria-label="Profile content">
-          {['posts', 'replies', 'likes', 'bookmarks'].map((tab) => (
+          {['posts', 'content', 'replies', 'likes', 'bookmarks'].map((tab) => (
             <button
               key={tab}
               role="tab"
@@ -306,6 +310,34 @@ export default function ProfilePage() {
                 onSave={() => toggleBookmark.mutate(post.id)}
                 onDelete={() => deletePostMutation.mutate(post.id)}
               />
+            ))
+          )
+        )}
+
+        {activeTab === 'content' && (
+          contentLoading ? (
+            [1, 2, 3].map((i) => (
+              <div key={i} className="p-4 animate-pulse space-y-3">
+                <div className="flex gap-3">
+                  <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-bg-tertiary rounded" />
+                    <div className="h-3 w-48 bg-bg-tertiary rounded" />
+                  </div>
+                </div>
+                <div className="h-16 bg-bg-tertiary rounded" />
+              </div>
+            ))
+          ) : contentData?.items.length === 0 ? (
+            <div className="p-8 text-center"><p className="text-text-secondary">No content yet</p></div>
+          ) : (
+            contentData?.items.map((item) => (
+              <div key={item.id} className="p-4">
+                <ContentCard
+                  item={item}
+                  onLike={() => toggleReaction.mutate({ contentItemId: item.id })}
+                />
+              </div>
             ))
           )
         )}
