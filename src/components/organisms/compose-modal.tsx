@@ -7,7 +7,7 @@ import { EmojiPicker } from '@/components/molecules/emoji-picker'
 import { useCreatePost } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
-import { useCommunities } from '@/hooks/use-communities'
+import { useMySpaces } from '@/hooks/use-spaces'
 import { supabase } from '@/config/supabase'
 import { cn } from '@/lib/utils'
 import { extractUrls, fetchLinkPreview } from '@/lib/link-preview'
@@ -107,16 +107,15 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
   const [loadingLink, setLoadingLink] = useState(false)
   const [showLinkInput, setShowLinkInput] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
-  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null)
-  const [showCommunityPicker, setShowCommunityPicker] = useState(false)
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
+  const [showSpacePicker, setShowSpacePicker] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
   const createPost = useCreatePost()
   const user = useAuthStore((s) => s.user)
   const toast = useToast((s) => s.toast)
-  const { data: communities = [] } = useCommunities()
-  const joinedCommunities = communities.filter((c) => c.is_member)
+  const { data: spaces = [] } = useMySpaces()
 
   useEffect(() => {
     if (isOpen) setTimeout(() => textareaRef.current?.focus(), 100)
@@ -131,8 +130,8 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
     setLinkPreview(null)
     setShowLinkInput(false)
     setLinkUrl('')
-    setSelectedCommunityId(null)
-    setShowCommunityPicker(false)
+    setSelectedSpaceId(null)
+    setShowSpacePicker(false)
     onClose()
   }, [onClose])
 
@@ -223,7 +222,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
           images: media.images,
           videoUrl: media.videoUrl,
           linkPreview: linkPreview || undefined,
-          communityId: selectedCommunityId || undefined,
+          communityId: selectedSpaceId || undefined,
         },
         {
           onSuccess: () => {
@@ -361,31 +360,31 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
             </div>
           </div>
 
-          {/* Community Selector */}
-          {joinedCommunities.length > 0 && (
+          {/* Space Selector */}
+          {spaces.length > 0 && (
             <div className="mt-3">
               <button
-                onClick={() => setShowCommunityPicker(!showCommunityPicker)}
+                onClick={() => setShowSpacePicker(!showSpacePicker)}
                 className={cn(
                   'flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors',
-                  selectedCommunityId
+                  selectedSpaceId
                     ? 'border-accent bg-accent-light text-accent'
                     : 'border-border text-text-secondary hover:border-accent/30'
                 )}
               >
                 <Grid3X3 className="h-4 w-4" />
-                {selectedCommunityId
-                  ? communities.find((c) => c.id === selectedCommunityId)?.name || 'Post to community'
-                  : 'Post to community'}
-                {selectedCommunityId && (
+                {selectedSpaceId
+                  ? spaces.find((s) => s.id === selectedSpaceId)?.name || 'Post to space'
+                  : 'Post to space'}
+                {selectedSpaceId && (
                   <X
                     className="h-3.5 w-3.5 ml-1"
-                    onClick={(e) => { e.stopPropagation(); setSelectedCommunityId(null) }}
+                    onClick={(e) => { e.stopPropagation(); setSelectedSpaceId(null) }}
                   />
                 )}
               </button>
               <AnimatePresence>
-                {showCommunityPicker && (
+                {showSpacePicker && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -393,27 +392,27 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
                     className="mt-2 border border-border rounded-xl overflow-hidden max-h-40 overflow-y-auto"
                   >
                     <button
-                      onClick={() => { setSelectedCommunityId(null); setShowCommunityPicker(false) }}
+                      onClick={() => { setSelectedSpaceId(null); setShowSpacePicker(false) }}
                       className={cn(
                         'w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-bg-tertiary transition-colors text-left',
-                        !selectedCommunityId && 'bg-accent-light text-accent'
+                        !selectedSpaceId && 'bg-accent-light text-accent'
                       )}
                     >
                       <span className="text-lg">🌐</span>
-                      <span>No community (和个人动态)</span>
+                      <span>No space (和个人动态)</span>
                     </button>
-                    {joinedCommunities.map((c) => (
+                    {spaces.map((s) => (
                       <button
-                        key={c.id}
-                        onClick={() => { setSelectedCommunityId(c.id); setShowCommunityPicker(false) }}
+                        key={s.id}
+                        onClick={() => { setSelectedSpaceId(s.id); setShowSpacePicker(false) }}
                         className={cn(
                           'w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-bg-tertiary transition-colors text-left',
-                          selectedCommunityId === c.id && 'bg-accent-light text-accent'
+                          selectedSpaceId === s.id && 'bg-accent-light text-accent'
                         )}
                       >
-                        <span className="text-lg">{c.icon}</span>
-                        <span className="truncate">{c.name}</span>
-                        <span className="text-text-tertiary text-xs ml-auto">{c.member_count}</span>
+                        <span className="text-lg">{s.icon}</span>
+                        <span className="truncate">{s.name}</span>
+                        <span className="text-text-tertiary text-xs ml-auto">{s.member_count}</span>
                       </button>
                     ))}
                   </motion.div>
