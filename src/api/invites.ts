@@ -1,4 +1,5 @@
 import { supabase } from '@/config/supabase';
+import { checkUserPermission } from '@/api/spaces';
 import type { SpaceInvite, CreateInviteInput } from '@/types/invites';
 
 const TABLE_MISSING = ['42P01', '42501', 'PGRST301'];
@@ -15,6 +16,9 @@ export function generateInviteToken(): string {
 export async function createInvite(input: CreateInviteInput): Promise<SpaceInvite | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
+
+  const isAdmin = await checkUserPermission(input.spaceId, user.id, 'space.edit');
+  if (!isAdmin) throw new Error('Only space admins can create invites');
 
   const token = generateInviteToken();
 
@@ -41,6 +45,21 @@ export async function createInvite(input: CreateInviteInput): Promise<SpaceInvit
 }
 
 export async function revokeInvite(inviteId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: invite } = await supabase
+    .from('space_invites')
+    .select('space_id, created_by')
+    .eq('id', inviteId)
+    .single();
+
+  if (!invite) throw new Error('Invite not found');
+  if (invite.created_by !== user.id) {
+    const isAdmin = await checkUserPermission(invite.space_id, user.id, 'space.edit');
+    if (!isAdmin) throw new Error('Only space admins can revoke invites');
+  }
+
   const { error } = await supabase
     .from('space_invites')
     .update({ status: 'revoked' })
@@ -50,6 +69,9 @@ export async function revokeInvite(inviteId: string): Promise<void> {
 }
 
 export async function fetchSpaceInvites(spaceId: string): Promise<SpaceInvite[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data, error } = await supabase
     .from('space_invites')
     .select('*')
