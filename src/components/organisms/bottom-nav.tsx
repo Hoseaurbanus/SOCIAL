@@ -36,7 +36,8 @@ export function BottomNav() {
       <div className="flex items-center justify-around h-16 px-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to ||
-            (item.to === '/messages' && location.pathname.startsWith('/messages'))
+            (item.to === '/messages' && location.pathname.startsWith('/messages')) ||
+            (item.to === '/spaces' && location.pathname.startsWith('/space'))
           const badgeCount = item.to === '/notifications' ? unreadCount :
             item.to === '/messages' ? unreadMessages : 0
           const showBadge = item.showBadge && badgeCount > 0

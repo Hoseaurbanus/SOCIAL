@@ -30,7 +30,7 @@ export default function PrivacyPage() {
   const user = useAuthStore((s) => s.user)
   const { data: profile } = useProfile(user?.username || '')
   const updateProfile = useUpdateProfile()
-  const { toast } = useToast()
+  const toast = useToast((s) => s.toast)
 
   const [privateAccount, setPrivateAccount] = useState(false)
   const [showActivity, setShowActivity] = useState(true)

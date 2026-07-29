@@ -271,7 +271,7 @@ function SpacesTab() {
   const joinSpace = useJoinSpace()
   const leaveSpace = useLeaveSpace()
   const createSpace = useCreateSpace()
-  const { toast } = useToast()
+  const toast = useToast((s) => s.toast)
   const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')

@@ -14,7 +14,7 @@ export default function AccountSettingsPage() {
   const user = useAuthStore((s) => s.user)
   const { data: profile } = useProfile(user?.username || '')
   const updateProfile = useUpdateProfile()
-  const { toast } = useToast()
+  const toast = useToast((s) => s.toast)
 
   const [name, setName] = useState(profile?.name || '')
   const [username, setUsername] = useState(profile?.username || '')

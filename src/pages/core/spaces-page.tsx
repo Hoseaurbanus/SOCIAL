@@ -12,13 +12,14 @@ export default function SpacesPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<SpaceType | 'all'>('all');
   
-  const { data: mySpaces, isLoading: mySpacesLoading } = useMySpaces();
-  const { data: allSpaces, isLoading: allSpacesLoading } = useSpaces();
+  const { data: mySpaces, isLoading: mySpacesLoading, error: mySpacesError } = useMySpaces();
+  const { data: allSpaces, isLoading: allSpacesLoading, error: allSpacesError } = useSpaces();
   const joinSpace = useJoinSpace();
   const leaveSpace = useLeaveSpace();
   const toast = useToast((s) => s.toast);
   
   const isLoading = mySpacesLoading || allSpacesLoading;
+  const error = mySpacesError || allSpacesError;
   
   const filteredSpaces = (allSpaces?.spaces || []).filter(space => {
     const matchesSearch = space.name.toLowerCase().includes(search.toLowerCase());
@@ -79,6 +80,11 @@ export default function SpacesPage() {
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center">
+            <p className="text-text-secondary mb-2">Failed to load spaces.</p>
+            <button onClick={() => window.location.reload()} className="text-accent text-sm font-medium">Try again</button>
           </div>
         ) : filteredSpaces.length === 0 ? (
           <EmptyState

@@ -37,16 +37,22 @@ export function MemberList({ members, isLoading }: MemberListProps) {
           animate={{ opacity: 1, y: 0 }}
         >
           <Link
-            to={`/profile/${member.user_id}`}
+            to={member.user?.username ? `/profile/${member.user.username}` : '#'}
             className="flex items-center gap-3 p-3 rounded-xl hover:bg-bg-secondary transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
-              <span className="text-accent font-semibold">
-                {member.user_id.slice(0, 2).toUpperCase()}
-              </span>
+            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center overflow-hidden">
+              {member.user?.avatar ? (
+                <img src={member.user.avatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-accent font-semibold">
+                  {(member.user?.name || 'U').slice(0, 2).toUpperCase()}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-text-primary">User {member.user_id.slice(0, 8)}</p>
+              <p className="font-medium text-text-primary">
+                {member.user?.name || `User ${member.user_id.slice(0, 8)}`}
+              </p>
               <p className="text-sm text-text-secondary capitalize">{member.role}</p>
             </div>
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${

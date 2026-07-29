@@ -13,7 +13,7 @@ export default function SpaceDetailPage() {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'about' | 'settings'>('feed');
 
-  const { data: space, isLoading: spaceLoading } = useSpace(slug || '');
+  const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(slug || '');
   const { data: members, isLoading: membersLoading } = useSpaceMembers(space?.id || '');
   const { data: contentData, isLoading: contentLoading } = useContentItems({
     spaceId: space?.id || '',
@@ -26,6 +26,18 @@ export default function SpaceDetailPage() {
     return (
       <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  if (spaceError) {
+    return (
+      <div className="min-h-screen bg-bg-primary">
+        <EmptyState
+          icon="⚠️"
+          title="Failed to load space"
+          description="Something went wrong. Please try again."
+        />
       </div>
     );
   }

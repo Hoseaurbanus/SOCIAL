@@ -292,12 +292,6 @@ body {
   );
 }
 
-/* Rotating gradient border for unviewed stories */
-@keyframes rotate-gradient {
-  0% { --angle: 0deg; }
-  100% { --angle: 360deg; }
-}
-
 .story-ring-unviewed {
   background: conic-gradient(
     from 0deg,

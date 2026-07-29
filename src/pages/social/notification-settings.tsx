@@ -45,7 +45,7 @@ export default function NotificationSettingsPage() {
   const user = useAuthStore((s) => s.user)
   const { data: profile } = useProfile(user?.username || '')
   const updateProfile = useUpdateProfile()
-  const { toast } = useToast()
+  const toast = useToast((s) => s.toast)
 
   const [settings, setSettings] = useState(DEFAULT_PREFS)
   const [initialized, setInitialized] = useState(false)
