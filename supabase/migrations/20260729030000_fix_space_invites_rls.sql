@@ -1,14 +1,17 @@
--- Fix: Drop old space_invites policies that cause infinite recursion
--- and recreate with SECURITY DEFINER functions
+-- COMPLETE FIX: Drop ALL old space_invites policies and recreate with SECURITY DEFINER
 
--- 1. Drop old policies
-DROP POLICY IF EXISTS "Members can view own invites" ON space_invites;
-DROP POLICY IF EXISTS "Owner/admin can create invites" ON space_invites;
-DROP POLICY IF EXISTS "Creator or owner/admin can revoke invites" ON space_invites;
-DROP POLICY IF EXISTS "Owner/admin can delete invites" ON space_invites;
-DROP POLICY IF EXISTS "Anyone can validate invite token" ON space_invites;
+-- 1. Drop ALL existing policies on space_invites
+DO $$ 
+DECLARE
+  pol record;
+BEGIN
+  FOR pol IN SELECT policyname FROM pg_policies WHERE tablename = 'space_invites'
+  LOOP
+    EXECUTE 'DROP POLICY IF EXISTS "' || pol.policyname || '" ON space_invites';
+  END LOOP;
+END $$;
 
--- 2. Drop old functions if they exist
+-- 2. Drop old helper functions
 DROP FUNCTION IF EXISTS is_space_member(UUID);
 DROP FUNCTION IF EXISTS is_space_admin(UUID);
 
@@ -34,39 +37,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
--- 4. Recreate policies using SECURITY DEFINER functions
--- Anyone can validate a token (for join page)
-CREATE POLICY "Anyone can validate invite token"
+-- 4. Recreate policies
+CREATE POLICY "view_invites_public"
   ON space_invites FOR SELECT
   USING (true);
 
--- Creator or space admin can view invites
-CREATE POLICY "Creator or admin can view invites"
+CREATE POLICY "view_invites_creator_or_admin"
   ON space_invites FOR SELECT
-  USING (
-    created_by = auth.uid()
-    OR is_space_admin(space_id)
-  );
+  USING (created_by = auth.uid() OR is_space_admin(space_id));
 
--- Space admin can create invites
-CREATE POLICY "Admin can create invites"
+CREATE POLICY "insert_invites_admin"
   ON space_invites FOR INSERT
-  WITH CHECK (
-    created_by = auth.uid()
-    AND is_space_admin(space_id)
-  );
+  WITH CHECK (created_by = auth.uid() AND is_space_admin(space_id));
 
--- Creator or space admin can revoke
-CREATE POLICY "Creator or admin can revoke invites"
+CREATE POLICY "update_invites_creator_or_admin"
   ON space_invites FOR UPDATE
-  USING (
-    created_by = auth.uid()
-    OR is_space_admin(space_id)
-  );
+  USING (created_by = auth.uid() OR is_space_admin(space_id));
 
--- Space admin can delete invites
-CREATE POLICY "Admin can delete invites"
+CREATE POLICY "delete_invites_admin"
   ON space_invites FOR DELETE
-  USING (
-    is_space_admin(space_id)
-  );
+  USING (is_space_admin(space_id));
