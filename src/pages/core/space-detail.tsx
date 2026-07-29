@@ -1,17 +1,15 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useParams, Link } from 'react-router';
 import { ArrowLeft, Settings, Users, Loader2, Plus, Lock, Globe } from 'lucide-react';
 import { useSpace, useJoinSpace, useLeaveSpace, useSpaceMembers } from '@/hooks/use-spaces';
 import { useAuthStore } from '@/stores/auth-store';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/atoms/button';
 import { EmptyState } from '@/components/molecules/empty-state';
-import type { SpaceMemberRole } from '@/types/spaces';
 
 export default function SpaceDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'about'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'about' | 'settings'>('feed');
   
   const { data: space, isLoading: spaceLoading } = useSpace(slug || '');
   const { data: members, isLoading: membersLoading } = useSpaceMembers(space?.id || '');
@@ -51,14 +49,14 @@ export default function SpaceDetailPage() {
     leaveMutation.mutate(space.id);
   };
   
-  const tabs = [
-    { id: 'feed' as const, label: 'Feed', icon: '📝' },
-    { id: 'members' as const, label: 'Members', icon: '👥' },
-    { id: 'about' as const, label: 'About', icon: 'ℹ️' },
+  const tabs: { id: 'feed' | 'members' | 'about' | 'settings'; label: string; icon: string }[] = [
+    { id: 'feed', label: 'Feed', icon: '📝' },
+    { id: 'members', label: 'Members', icon: '👥' },
+    { id: 'about', label: 'About', icon: 'ℹ️' },
   ];
   
   if (isAdmin) {
-    tabs.push({ id: 'settings' as const, label: 'Settings', icon: '⚙️' });
+    tabs.push({ id: 'settings', label: 'Settings', icon: '⚙️' });
   }
   
   return (
@@ -122,14 +120,14 @@ export default function SpaceDetailPage() {
         <div className="flex gap-2 mt-4">
           {space.is_member ? (
             <>
-              <Button variant="outline" className="flex-1" asChild>
+              <Button variant="secondary" className="flex-1" asChild>
                 <Link to={`/space/${space.slug}/chat`}>
                   💬 Chat
                 </Link>
               </Button>
               {!isOwner && (
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   className="text-red-500 hover:bg-red-50 hover:border-red-200"
                   onClick={handleLeave}
                   disabled={leaveMutation.isPending}

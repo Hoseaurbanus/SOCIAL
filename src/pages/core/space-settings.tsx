@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, Save, Trash2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router';
+import { ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react';
 import { useSpace, useUpdateSpace, useUpdateSpaceModules, useDeleteSpace } from '@/hooks/use-spaces';
-import { useAuthStore } from '@/stores/auth-store';
 import { canEditSpace, canDeleteSpace, canManageModules } from '@/lib/rbac';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { BackHeader } from '@/components/molecules/back-header';
-import type { SpaceModules } from '@/types/spaces';
+import { Button } from '@/components/atoms/button';
+import { Input } from '@/components/atoms/input';
+import type { SpaceModules, SpaceMemberRole } from '@/types/spaces';
 
 export default function SpaceSettingsPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   
   const { data: space, isLoading: spaceLoading } = useSpace(slug || '');
   const updateSpaceMutation = useUpdateSpace();
@@ -60,7 +57,7 @@ export default function SpaceSettingsPage() {
     return null;
   }
   
-  const role = space.member_role;
+  const role: SpaceMemberRole | null = space.member_role ?? null;
   const canEdit = canEditSpace(role);
   const canManage = canManageModules(role);
   const canDelete = canDeleteSpace(role);
@@ -133,7 +130,14 @@ export default function SpaceSettingsPage() {
   
   return (
     <div className="min-h-screen bg-bg-primary pb-20">
-      <BackHeader title="Space Settings" />
+      <div className="sticky top-0 z-20 glass border-b border-border-primary">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-bg-secondary transition-colors">
+            <ArrowLeft className="w-5 h-5 text-text-primary" />
+          </button>
+          <h1 className="text-lg font-bold text-text-primary">Space Settings</h1>
+        </div>
+      </div>
       
       <div className="px-4 py-4 space-y-6">
         {canEdit && (
@@ -144,7 +148,7 @@ export default function SpaceSettingsPage() {
                 <label className="block text-sm font-medium text-text-secondary mb-1">Name</label>
                 <Input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                   placeholder="Space name"
                 />
               </div>
@@ -152,7 +156,7 @@ export default function SpaceSettingsPage() {
                 <label className="block text-sm font-medium text-text-secondary mb-1">Description</label>
                 <textarea
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                   placeholder="Space description"
                   className="w-full px-3 py-2 rounded-xl border border-border-primary bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
                   rows={3}
@@ -162,7 +166,7 @@ export default function SpaceSettingsPage() {
                 <label className="block text-sm font-medium text-text-secondary mb-1">Icon</label>
                 <Input
                   value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setIcon(e.target.value)}
                   placeholder="Emoji icon"
                 />
               </div>
@@ -170,7 +174,7 @@ export default function SpaceSettingsPage() {
                 <label className="block text-sm font-medium text-text-secondary mb-1">Visibility</label>
                 <select
                   value={visibility}
-                  onChange={(e) => setVisibility(e.target.value as typeof visibility)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVisibility(e.target.value as typeof visibility)}
                   className="w-full px-3 py-2 rounded-xl border border-border-primary bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
                 >
                   <option value="public">Public - Anyone can find and join</option>
@@ -239,7 +243,7 @@ export default function SpaceSettingsPage() {
               Deleting this space will remove all content and members. This action cannot be undone.
             </p>
             <Button
-              variant="outline"
+              variant="secondary"
               className="text-red-600 border-red-200 hover:bg-red-50"
               onClick={handleDelete}
               disabled={deleteSpaceMutation.isPending}

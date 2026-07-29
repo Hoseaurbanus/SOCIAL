@@ -1,49 +1,41 @@
-### Task 1: Fix OTP vs Magic Link mismatch in auth store
+### Task 1.1: Create Content Types
 
 **Files:**
-- Modify: `src/stores/auth-store.ts:76-121`
+- Create: `src/types/content.ts`
 
-**The bug:** `signup()` calls `signInWithOtp({ email })` which sends a magic link by default. But the verify page expects a 6-digit OTP code. `verifyOtp()` uses `type: 'magiclink'` for email, which expects the user to have clicked a link, not typed a code.
-
-**Fix:** Change the OTP type to `'email'` for email and keep `'sms'` for phone.
-
-- [ ] **Step 1: Fix verifyOtp to use correct type**
-
-In `src/stores/auth-store.ts`, change the `verifyOtp` method:
-
-```typescript
-verifyOtp: async (identifier, token, type) => {
-  const { data, error } = await supabase.auth.verifyOtp({
-    [type]: identifier,
-    token,
-    type: type === 'email' ? 'email' : 'sms',
-  } as any)
-  if (error) return { error: error.message }
-
-  if (data.session && data.user) {
-    set({
-      user: buildProfile(data.user),
-      token: data.session.access_token,
-      isAuthenticated: true,
-      isLoading: false,
-      pendingVerification: null,
-    })
-  }
-  return {}
-},
-```
-
-- [ ] **Step 2: Verify Supabase dashboard setting**
-
-The user must also set their Supabase project's Email Template from "Magic Link" to "OTP" in the Supabase dashboard under Authentication > Email Templates. This is a dashboard configuration, not code.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/stores/auth-store.ts
-git commit -m "fix: change OTP verification type from magiclink to email/sms"
-```
+- [ ] **Step 1:** Create types with ContentItem, ContentType, ContentVisibility, ContentMedia, Reaction, Comment
+- [ ] **Step 2:** Verify types compile
+- [ ] **Step 3:** Commit
 
 ---
 
+### Task 1.2: Create Content API
+
+**Files:**
+- Create: `src/api/content.ts`
+
+- [ ] **Step 1:** Create API with createContentItem, fetchContentItems, fetchContentItemById, updateContentItem, deleteContentItem, toggleReaction, fetchReactions, checkReactionStatus
+- [ ] **Step 2:** Verify API compiles
+- [ ] **Step 3:** Commit
+
+---
+
+### Task 1.3: Create Content Hooks
+
+**Files:**
+- Create: `src/hooks/use-content.ts`
+
+- [ ] **Step 1:** Create hooks with useContentItems, useContentItem, useCreateContentItem, useUpdateContentItem, useDeleteContentItem, useToggleReaction, useReactionStatus
+- [ ] **Step 2:** Verify hooks compile
+- [ ] **Step 3:** Commit
+
+---
+
+## Phase 2: RBAC + Module System
+
+**Goal:** Implement role-based access control and per-space feature toggles.
+
+**Duration:** 2-3 days
+
+---
 

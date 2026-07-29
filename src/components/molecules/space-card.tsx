@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { motion } from 'framer-motion';
 import type { SpaceWithMembership } from '@/types/spaces';
 import { SPACE_TYPE_LABELS } from '@/types/spaces';

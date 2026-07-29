@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { Search, Loader2 } from 'lucide-react';
 import { useMySpaces, useSpaces } from '@/hooks/use-spaces';
 import { EmptyState } from '@/components/molecules/empty-state';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/atoms/input';
 import type { SpaceType } from '@/types/spaces';
 import { SPACE_TYPE_LABELS, SPACE_TYPE_ICONS } from '@/types/spaces';
 
@@ -39,7 +39,7 @@ export default function SpacesPage() {
             <Input
               placeholder="Search spaces..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
               className="pl-10"
             />
           </div>

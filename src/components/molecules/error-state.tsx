@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/atoms/button';
 
 interface ErrorStateProps {
   title?: string;
@@ -20,7 +20,7 @@ export function ErrorState({
       <h3 className="text-lg font-semibold text-text-primary mb-2">{title}</h3>
       <p className="text-text-secondary text-center mb-4">{message}</p>
       {onRetry && (
-        <Button variant="outline" onClick={onRetry}>
+        <Button variant="secondary" onClick={onRetry}>
           Try Again
         </Button>
       )}

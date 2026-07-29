@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { MessageCircle, Heart, Share2, Bookmark } from 'lucide-react';
 import type { ContentItem } from '@/types/content';

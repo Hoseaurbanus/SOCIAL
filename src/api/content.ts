@@ -136,7 +136,11 @@ export async function toggleReaction(
 
     if (error) throw error;
 
-    await supabase.rpc('decrement_content_reactions', { content_item_id: contentItemId }).catch(() => {});
+    try {
+      await supabase.rpc('decrement_content_reactions', { content_item_id: contentItemId });
+    } catch {
+      // Counter may go stale but don't block the reaction
+    }
     return false;
   } else {
     const { error } = await supabase
@@ -149,7 +153,11 @@ export async function toggleReaction(
 
     if (error) throw error;
 
-    await supabase.rpc('increment_content_reactions', { content_item_id: contentItemId }).catch(() => {});
+    try {
+      await supabase.rpc('increment_content_reactions', { content_item_id: contentItemId });
+    } catch {
+      // Counter may go stale but don't block the reaction
+    }
     return true;
   }
 }

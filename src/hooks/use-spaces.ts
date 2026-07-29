@@ -12,7 +12,7 @@ import {
   fetchSpaceMembers,
   updateSpaceModules,
 } from '@/api/spaces';
-import type { Space, SpaceWithMembership, SpaceModules } from '@/types/spaces';
+import type { Space, SpaceModules } from '@/types/spaces';
 
 export function useSpaces(page = 1, pageSize = 20) {
   return useQuery({

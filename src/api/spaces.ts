@@ -190,7 +190,11 @@ export async function joinSpace(spaceId: string): Promise<void> {
   
   if (error) throw error;
   
-  await supabase.rpc('increment_space_members', { space_id: spaceId }).catch(() => {});
+  try {
+    await supabase.rpc('increment_space_members', { space_id: spaceId });
+  } catch {
+    // Counter may go stale but don't block the join
+  }
 }
 
 export async function leaveSpace(spaceId: string): Promise<void> {
@@ -205,7 +209,11 @@ export async function leaveSpace(spaceId: string): Promise<void> {
   
   if (error) throw error;
   
-  await supabase.rpc('decrement_space_members', { space_id: spaceId }).catch(() => {});
+  try {
+    await supabase.rpc('decrement_space_members', { space_id: spaceId });
+  } catch {
+    // Counter may go stale but don't block the leave
+  }
 }
 
 export async function fetchSpaceMembers(spaceId: string): Promise<SpaceMember[]> {
