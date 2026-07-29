@@ -1,10 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { Link } from 'react-router'
 import { AnimatePresence } from 'framer-motion'
 import { LayoutGrid, Users, Grid3X3, Clock, Zap, RefreshCw } from 'lucide-react'
 import { PostCard } from '@/components/molecules/post-card'
 import { ContentCard } from '@/components/molecules/content-card'
 import { Stories } from '@/components/molecules/stories'
 import { Button } from '@/components/atoms/button'
+import { Avatar } from '@/components/atoms/avatar'
 import { SkeletonPost } from '@/components/atoms/skeleton'
 import { ComposeModal } from '@/components/organisms/compose-modal'
 import { StoryViewer } from '@/components/organisms/story-viewer'
@@ -199,9 +201,9 @@ export default function HomePage() {
       {/* Create Post */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-accent to-accent-dark flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 shadow-sm">
-            {user?.name?.charAt(0) || 'S'}
-          </div>
+          <Link to={user?.username ? `/profile/${user.username}` : '/profile'} className="flex-shrink-0">
+            <Avatar src={user?.avatar} alt={user?.name || 'Your profile'} size="md" />
+          </Link>
           <button
             onClick={() => setShowCompose(true)}
             className="flex-1 h-12 rounded-2xl border-2 border-border bg-bg-secondary flex items-center px-4 text-text-tertiary text-sm cursor-pointer hover:border-accent/30 hover:bg-accent-light/30 transition-all text-left"
