@@ -6,7 +6,7 @@ export async function fetchConversations() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Step 1: Get all conversation IDs the user belongs to (1 query)
+  // Step 1: Get all conversation IDs the user belongs to
   const { data: participations, error: pError } = await supabase
     .from('conversation_participants')
     .select('conversation_id')
@@ -20,16 +20,10 @@ export async function fetchConversations() {
 
   const convIds = participations.map((p) => p.conversation_id)
 
-  // Step 2: Get all conversations with their participants in one query (1 query)
+  // Step 2: Get conversations
   const { data: conversations, error: cError } = await supabase
     .from('conversations')
-    .select(`
-      id,
-      created_at,
-      participants:conversation_participants(
-        user:profiles!conversation_participants_user_id_fkey(id, name, username, avatar)
-      )
-    `)
+    .select('id, created_at')
     .in('id', convIds)
     .order('created_at', { ascending: false })
 
@@ -38,7 +32,22 @@ export async function fetchConversations() {
     throw cError
   }
 
-  // Step 3: Get last message for each conversation in one batch (1 query)
+  // Step 3: Get all participants for these conversations
+  const { data: allParticipants } = await supabase
+    .from('conversation_participants')
+    .select('conversation_id, user_id')
+    .in('conversation_id', convIds)
+
+  // Step 4: Get profiles for all participant user IDs
+  const participantUserIds = [...new Set((allParticipants || []).map((p) => p.user_id))]
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, name, username, avatar')
+    .in('id', participantUserIds)
+
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]))
+
+  // Step 5: Get last message for each conversation
   const { data: lastMessages } = await supabase
     .from('messages')
     .select('*')
@@ -46,7 +55,6 @@ export async function fetchConversations() {
     .order('created_at', { ascending: false })
     .limit(convIds.length)
 
-  // Group last messages by conversation_id (take first per conversation)
   const lastMsgMap = new Map<string, Message>()
   lastMessages?.forEach((msg) => {
     if (!lastMsgMap.has(msg.conversation_id)) {
@@ -56,12 +64,14 @@ export async function fetchConversations() {
 
   // Build results
   const results: Conversation[] = (conversations || []).map((conv: any) => {
+    const convParticipants = (allParticipants || [])
+      .filter((p) => p.conversation_id === conv.id && p.user_id !== user.id)
+      .map((p) => profileMap.get(p.user_id))
+      .filter(Boolean)
     const lastMsg = lastMsgMap.get(conv.id)
     return {
       id: conv.id,
-      participants: (conv.participants || [])
-        .map((p: any) => p.user)
-        .filter((u: any) => u && u.id !== user.id),
+      participants: convParticipants,
       lastMessage: lastMsg,
       updatedAt: lastMsg?.created_at || conv.created_at,
     }

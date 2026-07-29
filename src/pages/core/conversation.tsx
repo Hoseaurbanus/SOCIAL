@@ -54,18 +54,31 @@ export default function ConversationPage() {
   useEffect(() => {
     if (!conversationId) return
     const loadParticipant = async () => {
-      const { data, error } = await supabase
+      // Get the other participant's user_id
+      const { data: parts, error: partError } = await supabase
         .from('conversation_participants')
-        .select('user:profiles!conversation_participants_user_id_fkey(name, username, avatar)')
+        .select('user_id')
         .eq('conversation_id', conversationId)
         .neq('user_id', user?.id || '')
         .limit(1)
-        .single()
-      if (error) {
+
+      if (partError || !parts?.length) {
         setParticipantError(true)
         return
       }
-      if (data?.user) setOtherUser(data.user as any)
+
+      // Get their profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('name, username, avatar')
+        .eq('id', parts[0].user_id)
+        .single()
+
+      if (profileError || !profile) {
+        setParticipantError(true)
+        return
+      }
+      setOtherUser(profile as any)
     }
     loadParticipant()
   }, [conversationId, user?.id])
