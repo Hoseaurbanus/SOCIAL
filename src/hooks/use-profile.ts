@@ -36,9 +36,45 @@ export function useToggleFollow() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: toggleFollow,
-    onSuccess: () => {
+    onMutate: async (targetUserId) => {
+      await queryClient.cancelQueries({ queryKey: ['follow-status'] })
+      await queryClient.cancelQueries({ queryKey: ['follow-counts'] })
+
+      const previousFollowStatus = queryClient.getQueryData<Record<string, boolean>>(['follow-status'])
+      const previousFollowCounts = queryClient.getQueriesData({ queryKey: ['follow-counts'] })
+
+      queryClient.setQueriesData<Record<string, boolean>>({ queryKey: ['follow-status'] }, (old) => {
+        if (!old) return { [targetUserId]: true }
+        return { ...old, [targetUserId]: !old[targetUserId] }
+      })
+
+      queryClient.setQueriesData({ queryKey: ['follow-counts'] }, (old: any) => {
+        if (!old) return old
+        const isCurrentlyFollowing = previousFollowStatus?.[targetUserId] ?? false
+        const delta = isCurrentlyFollowing ? -1 : 1
+        if (Array.isArray(old)) return old
+        if (typeof old === 'object' && old.followers !== undefined) {
+          return { ...old, followers: old.followers + delta }
+        }
+        return old
+      })
+
+      return { previousFollowStatus, previousFollowCounts }
+    },
+    onError: (_err, _targetUserId, context) => {
+      if (context?.previousFollowStatus) {
+        queryClient.setQueryData(['follow-status'], context.previousFollowStatus)
+      }
+      if (context?.previousFollowCounts) {
+        context.previousFollowCounts.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data)
+        })
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] })
       queryClient.invalidateQueries({ queryKey: ['follow-status'] })
+      queryClient.invalidateQueries({ queryKey: ['follow-counts'] })
     },
   })
 }

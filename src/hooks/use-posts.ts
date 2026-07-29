@@ -65,18 +65,38 @@ export function useToggleLike() {
       await queryClient.cancelQueries({ queryKey: ['likes'] })
       await queryClient.cancelQueries({ queryKey: ['posts'] })
 
-      const previousPosts = queryClient.getQueryData(['posts'])
+      const previousPosts = queryClient.getQueriesData({ queryKey: ['posts'] })
 
       queryClient.setQueriesData<Record<string, boolean>>({ queryKey: ['likes'] }, (old) => {
         if (!old) return { [postId]: true }
         return { ...old, [postId]: !old[postId] }
       })
 
+      queryClient.setQueriesData({ queryKey: ['posts'] }, (old: any) => {
+        if (!old) return old
+        if (old.pages) {
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              posts: (page.posts || page).map((post: any) =>
+                post.id === postId
+                  ? { ...post, likes_count: post.likes_count + (old && queryClient.getQueryData<Record<string, boolean>>(['likes'])?.[postId] ? -1 : 1) }
+                  : post
+              ),
+            })),
+          }
+        }
+        return old
+      })
+
       return { previousPosts }
     },
     onError: (_err, _postId, context) => {
       if (context?.previousPosts) {
-        queryClient.setQueryData(['posts'], context.previousPosts)
+        context.previousPosts.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data)
+        })
       }
     },
     onSettled: () => {
@@ -94,12 +114,19 @@ export function useToggleBookmark() {
       await queryClient.cancelQueries({ queryKey: ['bookmarks'] })
       await queryClient.cancelQueries({ queryKey: ['posts'] })
 
+      const previousBookmarks = queryClient.getQueryData<Record<string, boolean>>(['bookmarks'])
+
       queryClient.setQueriesData<Record<string, boolean>>({ queryKey: ['bookmarks'] }, (old) => {
         if (!old) return { [postId]: true }
         return { ...old, [postId]: !old[postId] }
       })
 
-      return {}
+      return { previousBookmarks }
+    },
+    onError: (_err, _postId, context) => {
+      if (context?.previousBookmarks) {
+        queryClient.setQueryData(['bookmarks'], context.previousBookmarks)
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
@@ -154,25 +181,37 @@ export function useDeletePost() {
 }
 
 export function useLikedPosts(userId: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['posts', 'liked', userId],
-    queryFn: () => fetchLikedPosts(userId),
+    queryFn: ({ pageParam = 1 }) => fetchLikedPosts(userId, pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
+    },
+    initialPageParam: 1,
     enabled: !!userId,
   })
 }
 
 export function useBookmarkedPosts(userId: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['posts', 'bookmarked', userId],
-    queryFn: () => fetchBookmarkedPosts(userId),
+    queryFn: ({ pageParam = 1 }) => fetchBookmarkedPosts(userId, pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
+    },
+    initialPageParam: 1,
     enabled: !!userId,
   })
 }
 
 export function useUserReplies(userId: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['replies', userId],
-    queryFn: () => fetchUserReplies(userId),
+    queryFn: ({ pageParam = 1 }) => fetchUserReplies(userId, pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
+    },
+    initialPageParam: 1,
     enabled: !!userId,
   })
 }

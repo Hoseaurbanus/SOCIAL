@@ -197,15 +197,19 @@ export async function checkBookmarkStatus(postIds: string[]) {
   return bookmarked
 }
 
-export async function fetchLikedPosts(userId: string) {
-  const { data: likes, error: likesError } = await supabase
+export async function fetchLikedPosts(userId: string, page = 1, pageSize = 20) {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data: likes, error: likesError, count } = await supabase
     .from('likes')
-    .select('post_id')
+    .select('post_id', { count: 'exact' })
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (likesError) throw likesError
-  if (!likes?.length) return []
+  if (!likes?.length) return { posts: [] as Post[], total: count || 0 }
 
   const postIds = likes.map((l) => l.post_id)
 
@@ -215,18 +219,22 @@ export async function fetchLikedPosts(userId: string) {
     .in('id', postIds)
 
   if (error) throw error
-  return (data || []) as Post[]
+  return { posts: (data || []) as Post[], total: count || 0 }
 }
 
-export async function fetchBookmarkedPosts(userId: string) {
-  const { data: bookmarks, error: bookmarksError } = await supabase
+export async function fetchBookmarkedPosts(userId: string, page = 1, pageSize = 20) {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data: bookmarks, error: bookmarksError, count } = await supabase
     .from('bookmarks')
-    .select('post_id')
+    .select('post_id', { count: 'exact' })
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (bookmarksError) throw bookmarksError
-  if (!bookmarks?.length) return []
+  if (!bookmarks?.length) return { posts: [] as Post[], total: count || 0 }
 
   const postIds = bookmarks.map((b) => b.post_id)
 
@@ -236,21 +244,25 @@ export async function fetchBookmarkedPosts(userId: string) {
     .in('id', postIds)
 
   if (error) throw error
-  return (data || []) as Post[]
+  return { posts: (data || []) as Post[], total: count || 0 }
 }
 
-export async function fetchUserReplies(userId: string) {
-  const { data, error } = await supabase
+export async function fetchUserReplies(userId: string, page = 1, pageSize = 20) {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
     .from('comments')
-    .select('*, commenter:profiles!comments_user_id_fkey(id, name, username, avatar), post:posts(id, content, user_id, user:profiles!posts_user_id_fkey(id, name, username, avatar))')
+    .select('*, commenter:profiles!comments_user_id_fkey(id, name, username, avatar), post:posts(id, content, user_id, user:profiles!posts_user_id_fkey(id, name, username, avatar))', { count: 'exact' })
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (error) {
-    if (TABLE_MISSING.includes(error.code)) return []
+    if (TABLE_MISSING.includes(error.code)) return { posts: [] as any[], total: 0 }
     throw error
   }
-  return (data || []) as any[]
+  return { posts: (data || []) as any[], total: count || 0 }
 }
 
 export async function fetchTrendingPosts(page = 1, pageSize = 20) {

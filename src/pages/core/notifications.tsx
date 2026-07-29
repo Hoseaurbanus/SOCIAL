@@ -1,3 +1,4 @@
+import { useRef, useCallback, useEffect } from 'react'
 import { Settings, Heart, MessageCircle, UserPlus, AtSign } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
@@ -21,6 +22,21 @@ export default function NotificationsPage() {
   const navigate = useNavigate()
 
   const notifications = data?.pages.flatMap((p) => p.notifications) || []
+
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
+    const [entry] = entries
+    if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleObserver, { rootMargin: '200px' })
+    if (loadMoreRef.current) observer.observe(loadMoreRef.current)
+    return () => observer.disconnect()
+  }, [handleObserver])
 
   if (error) {
     return (
@@ -135,16 +151,11 @@ export default function NotificationsPage() {
               </Link>
             )
           })}
-          <div className="py-4">
+          <div ref={loadMoreRef} className="py-4">
             {isFetchingNextPage && (
               <div className="flex justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent" />
               </div>
-            )}
-            {hasNextPage && !isFetchingNextPage && (
-              <Button variant="ghost" fullWidth onClick={() => fetchNextPage()} className="rounded-2xl font-medium">
-                Load more
-              </Button>
             )}
           </div>
         </div>

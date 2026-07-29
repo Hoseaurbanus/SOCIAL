@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router'
 import { ChevronLeft, Settings, MapPin, LinkIcon, Calendar, X } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
@@ -25,7 +25,7 @@ export default function ProfilePage() {
   const toggleFollow = useToggleFollow()
   const { data: isFollowing } = useFollowStatus(profile?.id ? [profile.id] : [])
   const following = profile ? (isFollowing?.[profile.id] || false) : false
-  const { data: postsData, isLoading: postsLoading, error: postsError } = useUserPosts(profile?.id || '')
+  const { data: postsData, isLoading: postsLoading, error: postsError, fetchNextPage: fetchNextPosts, hasNextPage: hasNextPosts, isFetchingNextPage: isFetchingNextPosts } = useUserPosts(profile?.id || '')
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
   const deletePostMutation = useDeletePost()
@@ -43,9 +43,31 @@ export default function ProfilePage() {
   const { data: likedMap } = useLikeStatus(postIds)
   const { data: bookmarkedMap } = useBookmarkStatus(postIds)
 
-  const { data: likedPosts, isLoading: likedLoading } = useLikedPosts(profile?.id || '')
-  const { data: bookmarkedPosts, isLoading: bookmarkedLoading } = useBookmarkedPosts(profile?.id || '')
-  const { data: replies, isLoading: repliesLoading } = useUserReplies(profile?.id || '')
+  const { data: likedPostsData, isLoading: likedLoading, fetchNextPage: fetchNextLiked, hasNextPage: hasNextLiked, isFetchingNextPage: isFetchingNextLiked } = useLikedPosts(profile?.id || '')
+  const { data: bookmarkedPostsData, isLoading: bookmarkedLoading, fetchNextPage: fetchNextBookmarked, hasNextPage: hasNextBookmarked, isFetchingNextPage: isFetchingNextBookmarked } = useBookmarkedPosts(profile?.id || '')
+  const { data: repliesData, isLoading: repliesLoading, fetchNextPage: fetchNextReplies, hasNextPage: hasNextReplies, isFetchingNextPage: isFetchingNextReplies } = useUserReplies(profile?.id || '')
+
+  const likedPosts = likedPostsData?.pages.flatMap((p) => p.posts) || []
+  const bookmarkedPosts = bookmarkedPostsData?.pages.flatMap((p) => p.posts) || []
+  const replies = repliesData?.pages.flatMap((p) => p.posts) || []
+
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
+    const [entry] = entries
+    if (entry.isIntersecting) {
+      if (activeTab === 'posts' && hasNextPosts && !isFetchingNextPosts) fetchNextPosts()
+      if (activeTab === 'likes' && hasNextLiked && !isFetchingNextLiked) fetchNextLiked()
+      if (activeTab === 'bookmarks' && hasNextBookmarked && !isFetchingNextBookmarked) fetchNextBookmarked()
+      if (activeTab === 'replies' && hasNextReplies && !isFetchingNextReplies) fetchNextReplies()
+    }
+  }, [activeTab, hasNextPosts, isFetchingNextPosts, fetchNextPosts, hasNextLiked, isFetchingNextLiked, fetchNextLiked, hasNextBookmarked, isFetchingNextBookmarked, fetchNextBookmarked, hasNextReplies, isFetchingNextReplies, fetchNextReplies])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleObserver, { rootMargin: '200px' })
+    if (loadMoreRef.current) observer.observe(loadMoreRef.current)
+    return () => observer.disconnect()
+  }, [handleObserver])
 
   if (authLoading) {
     return (
@@ -384,6 +406,7 @@ export default function ProfilePage() {
           )
         )}
       </div>
+      <div ref={loadMoreRef} className="h-4" />
     </div>
   )
 }
