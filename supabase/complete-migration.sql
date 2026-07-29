@@ -372,3 +372,30 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RAISE NOTICE 'pg_cron not available. Run delete_expired_stories() manually.';
 END $$;
+
+-- ============================================================
+-- SETTINGS: Add notification and privacy preference columns
+-- ============================================================
+
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS notification_preferences jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS show_activity boolean DEFAULT true;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS allow_mentions boolean DEFAULT true;
+
+-- ============================================================
+-- COMMUNITY POSTS: Add community_id to posts table
+-- ============================================================
+
+ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS community_id uuid REFERENCES public.communities(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_posts_community_id ON public.posts(community_id) WHERE community_id IS NOT NULL;
+
+-- ============================================================
+-- PERFORMANCE: Additional indexes for common queries
+-- ============================================================
+
+CREATE INDEX IF NOT EXISTS idx_conversation_participants_user_id ON public.conversation_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON public.messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON public.messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON public.notifications(user_id, is_read) WHERE is_read = false;
+CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON public.follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_following_id ON public.follows(following_id);

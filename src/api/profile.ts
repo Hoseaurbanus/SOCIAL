@@ -55,6 +55,21 @@ export async function uploadAvatar(file: File) {
   return urlData.publicUrl
 }
 
+export async function deleteOldAvatar(avatarUrl: string | null | undefined) {
+  if (!avatarUrl) return
+
+  // Only delete if it's from our Supabase storage
+  if (!avatarUrl.includes('/storage/v1/object/public/avatars/')) return
+
+  // Extract file path from URL
+  const urlParts = avatarUrl.split('/storage/v1/object/public/avatars/')
+  if (urlParts.length < 2) return
+
+  const filePath = urlParts[1]
+
+  await supabase.storage.from('avatars').remove([filePath])
+}
+
 export async function toggleFollow(targetUserId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')

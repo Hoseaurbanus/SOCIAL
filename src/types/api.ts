@@ -13,6 +13,16 @@ export interface User {
   website?: string
   location?: string
   is_private: boolean
+  notification_preferences?: {
+    push?: boolean
+    email?: boolean
+    likes?: boolean
+    comments?: boolean
+    follows?: boolean
+    messages?: boolean
+  }
+  show_activity?: boolean
+  allow_mentions?: boolean
   created_at: string
   updated_at: string
 }
@@ -28,6 +38,7 @@ export interface LinkPreview {
 export interface Post {
   id: string
   user_id: string
+  community_id?: string | null
   content: string
   images?: string[]
   video_url?: string | null

@@ -9,7 +9,7 @@ import { ComposeModal } from '@/components/organisms/compose-modal'
 import { StoryViewer } from '@/components/organisms/story-viewer'
 import { StoryCreator } from '@/components/organisms/story-creator'
 import { cn } from '@/lib/utils'
-import { useFeedPosts, useFollowingPosts, useTrendingPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
+import { useFeedPosts, useFollowingPosts, useTrendingPosts, useCommunityPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
 import { useStories, useCreateStory, useReplyToStory } from '@/hooks/use-stories'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
@@ -34,11 +34,12 @@ export default function HomePage() {
   const feedQuery = useFeedPosts()
   const followingQuery = useFollowingPosts()
   const trendingQuery = useTrendingPosts()
+  const communityQuery = useCommunityPosts()
   const { data: stories = [], refetch: refetchStories } = useStories()
   const createStory = useCreateStory()
   const replyToStory = useReplyToStory()
 
-  const activeQuery = activeTab === 'following' ? followingQuery : activeTab === 'trending' ? trendingQuery : feedQuery
+  const activeQuery = activeTab === 'following' ? followingQuery : activeTab === 'trending' ? trendingQuery : activeTab === 'communities' ? communityQuery : feedQuery
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeQuery
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()
@@ -204,13 +205,53 @@ export default function HomePage() {
 
       {/* Feed */}
       {activeTab === 'communities' ? (
-        <div className="p-12 text-center">
-          <div className="h-16 w-16 rounded-3xl bg-accent-light flex items-center justify-center mx-auto mb-4">
-            <Grid3X3 className="h-8 w-8 text-accent" />
+        communityQuery.isLoading ? (
+          <div className="divide-y divide-border">
+            {[1, 2, 3].map((i) => (
+              <SkeletonPost key={i} />
+            ))}
           </div>
-          <p className="text-text-primary font-semibold mb-1">No communities yet</p>
-          <p className="text-text-tertiary text-sm">Communities are coming soon. Stay tuned!</p>
-        </div>
+        ) : posts.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="h-16 w-16 rounded-3xl bg-accent-light flex items-center justify-center mx-auto mb-4">
+              <Grid3X3 className="h-8 w-8 text-accent" />
+            </div>
+            <p className="text-text-primary font-semibold mb-1">No community posts yet</p>
+            <p className="text-text-tertiary text-sm">Join communities to see posts from them here.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border" aria-live="polite">
+            {posts.map((post) => (
+              <PostCard
+                key={post.id}
+                postId={post.id}
+                isOwnPost={post.user_id === user?.id}
+                author={post.user}
+                content={post.content}
+                images={post.images}
+                videoUrl={post.video_url}
+                linkPreview={post.link_preview}
+                timestamp={post.created_at}
+                likes={post.likes_count}
+                comments={post.comments_count}
+                liked={!!likedMap?.[post.id]}
+                saved={!!bookmarkedMap?.[post.id]}
+                onLike={() => handleLike(post.id)}
+                onComment={() => {}}
+                onShare={() => handleShare(post.id)}
+                onSave={() => handleBookmark(post.id)}
+                onDelete={() => deletePostMutation.mutate(post.id)}
+              />
+            ))}
+            <div ref={loadMoreRef} className="py-4">
+              {isFetchingNextPage && (
+                <div className="flex justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent" />
+                </div>
+              )}
+            </div>
+          </div>
+        )
       ) : isLoading ? (
         <div className="divide-y divide-border">
           {[1, 2, 3].map((i) => (

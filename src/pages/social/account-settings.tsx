@@ -6,6 +6,7 @@ import { Avatar } from '@/components/atoms/avatar'
 import { useProfile, useUpdateProfile } from '@/hooks/use-profile'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/config/supabase'
+import { deleteOldAvatar } from '@/api/profile'
 import { useToast } from '@/hooks/use-toast'
 
 export default function AccountSettingsPage() {
@@ -48,6 +49,9 @@ export default function AccountSettingsPage() {
     try {
       let avatarUrl = profile?.avatar
       if (avatarFile) {
+        // Delete old avatar first
+        await deleteOldAvatar(profile?.avatar)
+
         const fileExt = avatarFile.name.split('.').pop()
         const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
         const filePath = `avatars/${fileName}`

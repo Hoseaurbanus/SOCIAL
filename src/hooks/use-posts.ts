@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, deletePost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment, fetchLikedPosts, fetchBookmarkedPosts, fetchUserReplies, fetchTrendingPosts, fetchPostById } from '@/api/posts'
+import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, deletePost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment, deleteComment, fetchLikedPosts, fetchBookmarkedPosts, fetchUserReplies, fetchTrendingPosts, fetchPostById, fetchCommunityPosts } from '@/api/posts'
+import { useToast } from '@/hooks/use-toast'
 
 export function useFeedPosts() {
   return useInfiniteQuery({
@@ -29,6 +30,18 @@ export function useTrendingPosts() {
     queryFn: ({ pageParam = 1 }) => fetchTrendingPosts(pageParam),
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
+    },
+    initialPageParam: 1,
+  })
+}
+
+export function useCommunityPosts() {
+  return useInfiniteQuery({
+    queryKey: ['posts', 'community'],
+    queryFn: ({ pageParam = 1 }) => fetchCommunityPosts(pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedPosts = allPages.reduce((acc, page) => acc + page.posts.length, 0)
+      return loadedPosts < lastPage.total ? allPages.length + 1 : undefined
     },
     initialPageParam: 1,
   })
@@ -150,6 +163,23 @@ export function useAddComment() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['comments', variables.postId] })
       queryClient.invalidateQueries({ queryKey: ['posts'] })
+    },
+  })
+}
+
+export function useDeleteComment(postId: string) {
+  const queryClient = useQueryClient()
+  const toast = useToast((s) => s.toast)
+
+  return useMutation({
+    mutationFn: ({ commentId }: { commentId: string }) => deleteComment(commentId, postId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] })
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
+      toast({ title: 'Comment deleted', variant: 'success' })
+    },
+    onError: () => {
+      toast({ title: 'Failed to delete comment', variant: 'error' })
     },
   })
 }

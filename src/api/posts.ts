@@ -165,6 +165,21 @@ export async function addComment(postId: string, content: string) {
   return data
 }
 
+export async function deleteComment(commentId: string, postId: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase
+    .from('comments')
+    .delete()
+    .eq('id', commentId)
+    .eq('user_id', user.id)
+
+  if (error) throw error
+
+  await supabase.rpc('decrement_comments', { post_id: postId })
+}
+
 export async function checkLikeStatus(postIds: string[]) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return {}
@@ -295,4 +310,38 @@ export async function fetchPostById(postId: string) {
     throw error
   }
   return data as Post
+}
+
+export async function fetchCommunityPosts(page = 1, pageSize = 20) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { posts: [] as Post[], total: 0 }
+
+  const { data: memberships, error: mError } = await supabase
+    .from('community_members')
+    .select('community_id')
+    .eq('user_id', user.id)
+
+  if (mError) {
+    if (TABLE_MISSING.includes(mError.code)) return { posts: [], total: 0 }
+    throw mError
+  }
+
+  const communityIds = memberships?.map((m) => m.community_id) || []
+  if (communityIds.length === 0) return { posts: [], total: 0 }
+
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
+    .from('posts')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)', { count: 'exact' })
+    .in('community_id', communityIds)
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return { posts: [], total: 0 }
+    throw error
+  }
+  return { posts: (data || []) as Post[], total: count || 0 }
 }

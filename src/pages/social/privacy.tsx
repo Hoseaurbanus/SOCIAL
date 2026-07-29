@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { useProfile, useUpdateProfile } from '@/hooks/use-profile'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -29,40 +30,47 @@ export default function PrivacyPage() {
   const user = useAuthStore((s) => s.user)
   const { data: profile } = useProfile(user?.username || '')
   const updateProfile = useUpdateProfile()
+  const { toast } = useToast()
 
   const [privateAccount, setPrivateAccount] = useState(false)
   const [showActivity, setShowActivity] = useState(true)
   const [allowMentions, setAllowMentions] = useState(true)
+  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    if (profile) {
+    if (profile && !initialized) {
       setPrivateAccount(profile.is_private ?? false)
+      setShowActivity(profile.show_activity ?? true)
+      setAllowMentions(profile.allow_mentions ?? true)
+      setInitialized(true)
     }
-  }, [profile])
-
-  useEffect(() => {
-    const savedActivity = localStorage.getItem('show_activity')
-    const savedMentions = localStorage.getItem('allow_mentions')
-    if (savedActivity !== null) setShowActivity(savedActivity === 'true')
-    if (savedMentions !== null) setAllowMentions(savedMentions === 'true')
-  }, [])
+  }, [profile, initialized])
 
   const handleTogglePrivate = () => {
     const newValue = !privateAccount
     setPrivateAccount(newValue)
-    updateProfile.mutate({ is_private: newValue })
+    updateProfile.mutate(
+      { is_private: newValue },
+      { onError: () => toast({ title: 'Failed to update', variant: 'error' }) }
+    )
   }
 
   const handleToggleActivity = () => {
     const newValue = !showActivity
     setShowActivity(newValue)
-    localStorage.setItem('show_activity', String(newValue))
+    updateProfile.mutate(
+      { show_activity: newValue },
+      { onError: () => toast({ title: 'Failed to update', variant: 'error' }) }
+    )
   }
 
   const handleToggleMentions = () => {
     const newValue = !allowMentions
     setAllowMentions(newValue)
-    localStorage.setItem('allow_mentions', String(newValue))
+    updateProfile.mutate(
+      { allow_mentions: newValue },
+      { onError: () => toast({ title: 'Failed to update', variant: 'error' }) }
+    )
   }
 
   return (

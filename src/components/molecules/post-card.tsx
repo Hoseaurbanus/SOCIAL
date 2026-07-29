@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, Trash2 } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
 import { cn } from '@/lib/utils'
 import { timeAgo } from '@/lib/timeago'
-import { usePostComments, useAddComment } from '@/hooks/use-posts'
+import { usePostComments, useAddComment, useDeleteComment } from '@/hooks/use-posts'
+import { useAuthStore } from '@/stores/auth-store'
 import type { LinkPreview } from '@/types/api'
 
 interface PostCardProps {
@@ -23,6 +24,8 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
   const [commentText, setCommentText] = useState('')
   const { data: postComments = [], isLoading: commentsLoading } = usePostComments(showComments && postId ? postId : '')
   const addCommentMutation = useAddComment()
+  const currentUser = useAuthStore((s) => s.user)
+  const deleteCommentMutation = useDeleteComment(postId || '')
 
   const handleSubmitComment = () => {
     if (!postId || !commentText.trim()) return
@@ -198,6 +201,15 @@ export function PostCard({ postId, isOwnPost, author, community, content, images
                         <span className="text-xs text-text-tertiary">@{comment.user.username}</span>
                         <span className="text-xs text-text-tertiary">·</span>
                         <span className="text-xs text-text-tertiary">{timeAgo(comment.created_at)}</span>
+                        {comment.user_id === currentUser?.id && (
+                          <button
+                            onClick={() => deleteCommentMutation.mutate({ commentId: comment.id })}
+                            className="ml-auto p-1 rounded-lg text-text-tertiary hover:text-error hover:bg-error-light transition-colors"
+                            aria-label="Delete comment"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                       <p className="text-sm text-text-primary mt-0.5">{comment.content}</p>
                     </div>

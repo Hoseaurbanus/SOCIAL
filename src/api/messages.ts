@@ -5,6 +5,7 @@ export async function fetchConversations() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
+  // Step 1: Get all conversation IDs the user belongs to (1 query)
   const { data: participations, error: pError } = await supabase
     .from('conversation_participants')
     .select('conversation_id')
@@ -18,9 +19,16 @@ export async function fetchConversations() {
 
   const convIds = participations.map((p) => p.conversation_id)
 
+  // Step 2: Get all conversations with their participants in one query (1 query)
   const { data: conversations, error: cError } = await supabase
     .from('conversations')
-    .select('*')
+    .select(`
+      id,
+      created_at,
+      participants:conversation_participants(
+        user:profiles!conversation_participants_user_id_fkey(id, name, username, avatar)
+      )
+    `)
     .in('id', convIds)
     .order('created_at', { ascending: false })
 
@@ -29,29 +37,30 @@ export async function fetchConversations() {
     throw cError
   }
 
-  const results: Conversation[] = []
-  for (const conv of conversations || []) {
-    const { data: participants } = await supabase
-      .from('conversation_participants')
-      .select('user:profiles!conversation_participants_user_id_fkey(id, name, username, avatar)')
-      .eq('conversation_id', conv.id)
-      .neq('user_id', user.id)
+  // Step 3: Get last message for each conversation in one batch (1 query)
+  const { data: lastMessages } = await supabase
+    .from('messages')
+    .select('*')
+    .in('conversation_id', convIds)
+    .order('created_at', { ascending: false })
 
-    const { data: lastMsg } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', conv.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
+  // Group last messages by conversation_id (take first per conversation)
+  const lastMsgMap = new Map<string, Message>()
+  lastMessages?.forEach((msg) => {
+    if (!lastMsgMap.has(msg.conversation_id)) {
+      lastMsgMap.set(msg.conversation_id, msg as Message)
+    }
+  })
 
-    results.push({
-      id: conv.id,
-      participants: (participants || []).map((p: any) => p.user),
-      lastMessage: lastMsg as Message || undefined,
-      updatedAt: conv.created_at,
-    })
-  }
+  // Build results
+  const results: Conversation[] = (conversations || []).map((conv: any) => ({
+    id: conv.id,
+    participants: (conv.participants || [])
+      .map((p: any) => p.user)
+      .filter((u: any) => u && u.id !== user.id),
+    lastMessage: lastMsgMap.get(conv.id),
+    updatedAt: conv.created_at,
+  }))
 
   return results
 }

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
+import { useProfile, useUpdateProfile } from '@/hooks/use-profile'
+import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 
 interface ToggleProps {
   label: string
@@ -28,26 +31,44 @@ function Toggle({ label, description, checked, onChange }: ToggleProps) {
   )
 }
 
+const DEFAULT_PREFS = {
+  push: true,
+  email: false,
+  likes: true,
+  comments: true,
+  follows: true,
+  messages: true,
+}
+
 export default function NotificationSettingsPage() {
   const navigate = useNavigate()
-  const [settings, setSettings] = useState({
-    push: true,
-    email: false,
-    likes: true,
-    comments: true,
-    follows: true,
-    messages: true,
-  })
+  const user = useAuthStore((s) => s.user)
+  const { data: profile } = useProfile(user?.username || '')
+  const updateProfile = useUpdateProfile()
+  const { toast } = useToast()
+
+  const [settings, setSettings] = useState(DEFAULT_PREFS)
+  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem('notification-settings')
-    if (saved) setSettings(JSON.parse(saved))
-  }, [])
+    if (profile && !initialized) {
+      const saved = profile.notification_preferences
+      if (saved && typeof saved === 'object') {
+        setSettings({ ...DEFAULT_PREFS, ...saved })
+      }
+      setInitialized(true)
+    }
+  }, [profile, initialized])
 
   const update = (key: keyof typeof settings, value: boolean) => {
     const next = { ...settings, [key]: value }
     setSettings(next)
-    localStorage.setItem('notification-settings', JSON.stringify(next))
+    updateProfile.mutate(
+      { notification_preferences: next },
+      {
+        onError: () => toast({ title: 'Failed to save setting', variant: 'error' }),
+      }
+    )
   }
 
   return (
