@@ -66,3 +66,20 @@ export async function getUnreadCount() {
   }
   return count || 0
 }
+
+export async function createNotification(userId: string, fromUserId: string, type: 'like' | 'comment' | 'follow' | 'mention' | 'message', postId?: string, message?: string) {
+  if (userId === fromUserId) return
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: userId,
+      from_user_id: fromUserId,
+      type,
+      post_id: postId || null,
+      message: message || '',
+    })
+
+  if (error && (error.code === '42P01' || error.code === '42501')) return
+  if (error) console.error('Failed to create notification:', error)
+}

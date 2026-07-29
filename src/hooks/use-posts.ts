@@ -1,6 +1,17 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, deletePost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment, deleteComment, fetchLikedPosts, fetchBookmarkedPosts, fetchUserReplies, fetchTrendingPosts, fetchPostById, fetchCommunityPosts } from '@/api/posts'
+import { fetchFeedPosts, fetchFollowingPosts, fetchPostsByUser, createPost, deletePost, toggleLike, toggleBookmark, checkLikeStatus, checkBookmarkStatus, fetchPostComments, addComment, deleteComment, fetchLikedPosts, fetchBookmarkedPosts, fetchUserReplies, fetchTrendingPosts, fetchPostById, fetchCommunityPosts, fetchPostsByCommunityId, fetchForYouPosts } from '@/api/posts'
 import { useToast } from '@/hooks/use-toast'
+
+export function useForYouPosts() {
+  return useInfiniteQuery({
+    queryKey: ['posts', 'for-you'],
+    queryFn: ({ pageParam = 1 }) => fetchForYouPosts(pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
+    },
+    initialPageParam: 1,
+  })
+}
 
 export function useFeedPosts() {
   return useInfiniteQuery({
@@ -47,6 +58,18 @@ export function useCommunityPosts() {
   })
 }
 
+export function usePostsByCommunityId(communityId: string) {
+  return useInfiniteQuery({
+    queryKey: ['posts', 'community', communityId],
+    queryFn: ({ pageParam = 1 }) => fetchPostsByCommunityId(communityId, pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.posts.length === 20 ? allPages.length + 1 : undefined
+    },
+    initialPageParam: 1,
+    enabled: !!communityId,
+  })
+}
+
 export function useUserPosts(userId: string) {
   return useInfiniteQuery({
     queryKey: ['posts', 'user', userId],
@@ -62,8 +85,8 @@ export function useUserPosts(userId: string) {
 export function useCreatePost() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ content, images, videoUrl, linkPreview }: { content: string; images?: string[]; videoUrl?: string; linkPreview?: any }) =>
-      createPost(content, images, videoUrl, linkPreview),
+    mutationFn: ({ content, images, videoUrl, linkPreview, communityId }: { content: string; images?: string[]; videoUrl?: string; linkPreview?: any; communityId?: string }) =>
+      createPost(content, images, videoUrl, linkPreview, communityId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] })
     },

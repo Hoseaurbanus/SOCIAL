@@ -9,7 +9,7 @@ import { ComposeModal } from '@/components/organisms/compose-modal'
 import { StoryViewer } from '@/components/organisms/story-viewer'
 import { StoryCreator } from '@/components/organisms/story-creator'
 import { cn } from '@/lib/utils'
-import { useFeedPosts, useFollowingPosts, useTrendingPosts, useCommunityPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
+import { useFeedPosts, useForYouPosts, useFollowingPosts, useTrendingPosts, useCommunityPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
 import { useStories, useCreateStory, useReplyToStory } from '@/hooks/use-stories'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
@@ -32,6 +32,7 @@ export default function HomePage() {
   const user = useAuthStore((s) => s.user)
   const { direction, scrollY } = useScrollDirection(5)
   const feedQuery = useFeedPosts()
+  const forYouQuery = useForYouPosts()
   const followingQuery = useFollowingPosts()
   const trendingQuery = useTrendingPosts()
   const communityQuery = useCommunityPosts()
@@ -39,7 +40,7 @@ export default function HomePage() {
   const createStory = useCreateStory()
   const replyToStory = useReplyToStory()
 
-  const activeQuery = activeTab === 'following' ? followingQuery : activeTab === 'trending' ? trendingQuery : activeTab === 'communities' ? communityQuery : feedQuery
+  const activeQuery = activeTab === 'for-you' ? forYouQuery : activeTab === 'following' ? followingQuery : activeTab === 'trending' ? trendingQuery : activeTab === 'communities' ? communityQuery : feedQuery
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeQuery
   const toggleLike = useToggleLike()
   const toggleBookmark = useToggleBookmark()

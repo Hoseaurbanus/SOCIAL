@@ -65,6 +65,7 @@ export async function createStoryFromDraft(draft: StoryDraft): Promise<Story> {
     music_title: draft.musicTitle || null,
     stickers: draft.stickers || [],
     text_overlays: draft.textOverlays || [],
+    audience: draft.audience || 'public',
     expires_at: expiresAt,
   }
 

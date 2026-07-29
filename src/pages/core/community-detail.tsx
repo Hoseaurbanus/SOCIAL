@@ -1,16 +1,28 @@
 import { useParams, useNavigate } from 'react-router'
 import { ChevronLeft, Users } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
+import { PostCard } from '@/components/molecules/post-card'
 import { useCommunityById, useJoinCommunity, useLeaveCommunity } from '@/hooks/use-communities'
+import { usePostsByCommunityId, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost } from '@/hooks/use-posts'
+import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
 
 export default function CommunityDetailPage() {
   const { communityId } = useParams<{ communityId: string }>()
   const navigate = useNavigate()
+  const currentUser = useAuthStore((s) => s.user)
   const { data: community, isLoading, error } = useCommunityById(communityId || '')
   const joinCommunity = useJoinCommunity()
   const leaveCommunity = useLeaveCommunity()
   const toast = useToast((s) => s.toast)
+  const { data: postsData, isLoading: postsLoading } = usePostsByCommunityId(communityId || '')
+  const toggleLike = useToggleLike()
+  const toggleBookmark = useToggleBookmark()
+  const deletePostMutation = useDeletePost()
+  const posts = postsData?.pages.flatMap((p) => p.posts) || []
+  const postIds = posts.map((p) => p.id)
+  const { data: likedMap } = useLikeStatus(postIds)
+  const { data: bookmarkedMap } = useBookmarkStatus(postIds)
 
   if (isLoading) {
     return (
@@ -97,13 +109,54 @@ export default function CommunityDetailPage() {
           <p className="text-text-primary">{community.description}</p>
         )}
 
-        <div className="p-8 text-center">
-          <div className="h-16 w-16 rounded-3xl bg-accent-light flex items-center justify-center mx-auto mb-4">
-            <Users className="h-8 w-8 text-accent" />
+        {/* Community Posts */}
+        {postsLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="p-4 animate-pulse space-y-3">
+                <div className="flex gap-3">
+                  <div className="h-10 w-10 rounded-full bg-bg-tertiary" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-bg-tertiary rounded" />
+                    <div className="h-3 w-48 bg-bg-tertiary rounded" />
+                  </div>
+                </div>
+                <div className="h-16 bg-bg-tertiary rounded" />
+              </div>
+            ))}
           </div>
-          <p className="text-text-primary font-semibold mb-1">Community posts coming soon</p>
-          <p className="text-text-tertiary text-sm">Posts from community members will appear here.</p>
-        </div>
+        ) : posts.length === 0 ? (
+          <div className="p-8 text-center">
+            <div className="h-16 w-16 rounded-3xl bg-accent-light flex items-center justify-center mx-auto mb-4">
+              <Users className="h-8 w-8 text-accent" />
+            </div>
+            <p className="text-text-primary font-semibold mb-1">No posts yet</p>
+            <p className="text-text-tertiary text-sm">Be the first to post in this community!</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {posts.map((post) => (
+              <PostCard
+                key={post.id}
+                postId={post.id}
+                isOwnPost={post.user_id === currentUser?.id}
+                author={post.user}
+                content={post.content}
+                images={post.images}
+                videoUrl={post.video_url}
+                linkPreview={post.link_preview}
+                timestamp={post.created_at}
+                likes={post.likes_count}
+                comments={post.comments_count}
+                liked={!!likedMap?.[post.id]}
+                saved={!!bookmarkedMap?.[post.id]}
+                onLike={() => toggleLike.mutate(post.id)}
+                onSave={() => toggleBookmark.mutate(post.id)}
+                onDelete={() => deletePostMutation.mutate(post.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

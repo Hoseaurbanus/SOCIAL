@@ -28,6 +28,7 @@ export interface StoryDraft {
   musicTitle?: string
   stickers?: StorySticker[]
   textOverlays?: TextOverlay[]
+  audience?: 'public' | 'followers'
 }
 
 const toolGroups = [
@@ -102,7 +103,7 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
     try {
       await onPost(draft)
       sessionStorage.removeItem(draftKey)
-      setDraft({ mode: 'text', textColor: '#FFFFFF', fontStyle: 'sans', filter: 'none' })
+      setDraft({ mode: 'text', textColor: '#FFFFFF', fontStyle: 'sans', filter: 'none', audience: 'public' })
       onClose()
     } catch (err: any) {
       const msg = err?.message || err?.error?.message || 'Failed to post story'
@@ -175,6 +176,17 @@ export function StoryCreator({ isOpen, onClose, onPost }: StoryCreatorProps) {
         </motion.button>
         <h2 className="text-base font-semibold text-text-primary">New Story</h2>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setDraft((prev) => ({ ...prev, audience: prev.audience === 'followers' ? 'public' : 'followers' }))}
+            className="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors"
+            style={{
+              borderColor: draft.audience === 'followers' ? 'var(--color-accent)' : 'var(--color-border)',
+              backgroundColor: draft.audience === 'followers' ? 'var(--color-accent-light)' : 'transparent',
+              color: draft.audience === 'followers' ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+            }}
+          >
+            {draft.audience === 'followers' ? 'Followers' : 'Public'}
+          </button>
           <Button variant="ghost" size="sm" onClick={() => setShowPreview(true)} disabled={draft.mode === 'text' && !draft.backgroundImage} aria-label="Preview">
             <Eye className="h-4 w-4 mr-1" />
             Preview

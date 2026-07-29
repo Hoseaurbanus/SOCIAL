@@ -1,4 +1,5 @@
 import { supabase } from '@/config/supabase'
+import { createNotification } from '@/api/notifications'
 import type { User } from '@/types/api'
 
 export async function fetchProfile(username: string) {
@@ -91,6 +92,7 @@ export async function toggleFollow(targetUserId: string) {
       follower_id: user.id,
       following_id: targetUserId,
     })
+    await createNotification(targetUserId, user.id, 'follow')
     return true
   }
 }

@@ -55,7 +55,11 @@ export async function joinCommunity(communityId: string) {
 
   if (error) throw error
 
-  await supabase.rpc('increment_community_members', { community_id: communityId })
+  try {
+    await supabase.rpc('increment_community_members', { community_id: communityId })
+  } catch {
+    // Member count may go stale but don't block the join
+  }
 }
 
 export async function leaveCommunity(communityId: string) {
@@ -70,7 +74,11 @@ export async function leaveCommunity(communityId: string) {
 
   if (error) throw error
 
-  await supabase.rpc('decrement_community_members', { community_id: communityId })
+  try {
+    await supabase.rpc('decrement_community_members', { community_id: communityId })
+  } catch {
+    // Member count may go stale but don't block the leave
+  }
 }
 
 export async function fetchCommunityById(communityId: string) {

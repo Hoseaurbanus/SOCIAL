@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router'
-import { ChevronLeft, Settings, MapPin, LinkIcon, Calendar, X } from 'lucide-react'
+import { ChevronLeft, Settings, MapPin, LinkIcon, Calendar, X, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
 import { PostCard } from '@/components/molecules/post-card'
@@ -8,6 +8,7 @@ import { useProfile, useProfileById, useFollowCounts, useToggleFollow, useFollow
 import { useUserPosts, useToggleLike, useToggleBookmark, useLikeStatus, useBookmarkStatus, useDeletePost, useLikedPosts, useBookmarkedPosts, useUserReplies } from '@/hooks/use-posts'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
+import { useCreateConversation } from '@/hooks/use-messages'
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>()
@@ -33,6 +34,7 @@ export default function ProfilePage() {
   const [showFollowers, setShowFollowers] = useState(false)
   const [showFollowing, setShowFollowing] = useState(false)
   const toast = useToast((s) => s.toast)
+  const createConversation = useCreateConversation()
 
   const { data: followersList } = useFollowers(showFollowers ? profile?.id || '' : '')
   const { data: followingList } = useFollowing(showFollowing ? profile?.id || '' : '')
@@ -139,16 +141,34 @@ export default function ProfilePage() {
               <Link to="/settings/account">Edit Profile</Link>
             </Button>
           ) : (
-            <Button
-              variant={following ? 'secondary' : 'primary'}
-              size="sm"
-              onClick={() => toggleFollow.mutate(profile.id, {
-                onSuccess: () => toast({ title: following ? 'Unfollowed' : 'Followed', variant: 'success' }),
-              })}
-              loading={toggleFollow.isPending}
-            >
-              {following ? 'Following' : 'Follow'}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant={following ? 'secondary' : 'primary'}
+                size="sm"
+                onClick={() => toggleFollow.mutate(profile.id, {
+                  onSuccess: () => toast({ title: following ? 'Unfollowed' : 'Followed', variant: 'success' }),
+                })}
+                loading={toggleFollow.isPending}
+              >
+                {following ? 'Following' : 'Follow'}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const convId = await createConversation.mutateAsync(profile.id)
+                    navigate(`/messages/${convId}`)
+                  } catch {
+                    toast({ title: 'Failed to start conversation', variant: 'error' })
+                  }
+                }}
+                loading={createConversation.isPending}
+              >
+                <MessageCircle className="h-4 w-4 mr-1" />
+                Message
+              </Button>
+            </div>
           )}
         </div>
 

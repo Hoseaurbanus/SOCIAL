@@ -399,3 +399,62 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(use
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON public.notifications(user_id, is_read) WHERE is_read = false;
 CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON public.follows(follower_id);
 CREATE INDEX IF NOT EXISTS idx_follows_following_id ON public.follows(following_id);
+
+-- ============================================================
+-- STORIES: Add audience column for visibility control
+-- ============================================================
+
+ALTER TABLE public.stories ADD COLUMN IF NOT EXISTS audience text DEFAULT 'public' CHECK (audience IN ('public', 'followers'));
+
+-- Drop old overly-permissive policy
+DROP POLICY IF EXISTS "Stories are viewable by everyone" ON public.stories;
+
+-- New policy: public stories visible to all, followers-only visible only to followers or self
+CREATE POLICY "Stories are viewable based on audience"
+  ON public.stories FOR SELECT
+  USING (
+    audience = 'public'
+    OR user_id = auth.uid()
+    OR (
+      audience = 'followers'
+      AND EXISTS (
+        SELECT 1 FROM public.follows
+        WHERE follower_id = auth.uid() AND following_id = stories.user_id
+      )
+    )
+  );
+
+-- ============================================================
+-- CONVERSATION PARTICIPANTS: Fix RLS for creating conversations
+-- ============================================================
+
+-- SECURITY DEFINER function to create a conversation with both participants
+CREATE OR REPLACE FUNCTION public.create_conversation_with_participant(other_user_id uuid)
+RETURNS uuid AS $$
+DECLARE
+  new_conv_id uuid;
+BEGIN
+  INSERT INTO public.conversations DEFAULT VALUES RETURNING id INTO new_conv_id;
+  INSERT INTO public.conversation_participants (conversation_id, user_id) VALUES (new_conv_id, auth.uid());
+  INSERT INTO public.conversation_participants (conversation_id, user_id) VALUES (new_conv_id, other_user_id);
+  RETURN new_conv_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
+-- NOTIFICATIONS: Add helper function to create notifications
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.create_notification(
+  p_user_id uuid,
+  p_from_user_id uuid,
+  p_type text,
+  p_post_id uuid DEFAULT NULL,
+  p_message text DEFAULT ''
+)
+RETURNS void AS $$
+BEGIN
+  INSERT INTO public.notifications (user_id, from_user_id, type, post_id, message)
+  VALUES (p_user_id, p_from_user_id, p_type, p_post_id, p_message);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -341,6 +341,7 @@ function CommunitiesTab() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Community name"
+            maxLength={50}
             className="w-full bg-bg-secondary border-2 border-border rounded-2xl px-3 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-0 transition-colors"
           />
           <textarea

@@ -75,6 +75,7 @@ export interface Story {
   music_title?: string | null
   stickers?: StorySticker[]
   text_overlays?: TextOverlay[]
+  audience?: 'public' | 'followers'
   created_at: string
   expires_at: string
   user: Pick<User, 'id' | 'name' | 'username' | 'avatar'>

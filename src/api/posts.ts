@@ -1,4 +1,5 @@
 import { supabase } from '@/config/supabase'
+import { createNotification } from '@/api/notifications'
 import type { Post, LinkPreview } from '@/types/api'
 
 export async function fetchFeedPosts(page = 1, pageSize = 20) {
@@ -69,7 +70,7 @@ export async function fetchFollowingPosts(page = 1, pageSize = 20) {
   return { posts: (data || []) as Post[], total: count || 0 }
 }
 
-export async function createPost(content: string, images?: string[], videoUrl?: string, linkPreview?: LinkPreview) {
+export async function createPost(content: string, images?: string[], videoUrl?: string, linkPreview?: LinkPreview, communityId?: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
@@ -77,6 +78,7 @@ export async function createPost(content: string, images?: string[], videoUrl?: 
   if (images && images.length > 0) insertData.images = images
   if (videoUrl) insertData.video_url = videoUrl
   if (linkPreview) insertData.link_preview = linkPreview
+  if (communityId) insertData.community_id = communityId
 
   const { data, error } = await supabase
     .from('posts')
@@ -111,6 +113,8 @@ export async function toggleLike(postId: string) {
   } else {
     await supabase.from('likes').insert({ user_id: user.id, post_id: postId })
     await supabase.rpc('increment_likes', { post_id: postId })
+    const { data: post } = await supabase.from('posts').select('user_id').eq('id', postId).single()
+    if (post) await createNotification(post.user_id, user.id, 'like', postId, 'liked your post')
     return true
   }
 }
@@ -162,6 +166,8 @@ export async function addComment(postId: string, content: string) {
   if (error) throw error
 
   await supabase.rpc('increment_comments', { post_id: postId })
+  const { data: post } = await supabase.from('posts').select('user_id').eq('id', postId).single()
+  if (post) await createNotification(post.user_id, user.id, 'comment', postId, 'commented on your post')
   return data
 }
 
@@ -336,6 +342,66 @@ export async function fetchCommunityPosts(page = 1, pageSize = 20) {
     .from('posts')
     .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)', { count: 'exact' })
     .in('community_id', communityIds)
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return { posts: [], total: 0 }
+    throw error
+  }
+  return { posts: (data || []) as Post[], total: count || 0 }
+}
+
+export async function fetchPostsByCommunityId(communityId: string, page = 1, pageSize = 20) {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
+    .from('posts')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)', { count: 'exact' })
+    .eq('community_id', communityId)
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) {
+    if (TABLE_MISSING.includes(error.code)) return { posts: [], total: 0 }
+    throw error
+  }
+  return { posts: (data || []) as Post[], total: count || 0 }
+}
+
+export async function fetchForYouPosts(page = 1, pageSize = 20) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return fetchFeedPosts(page, pageSize)
+
+  // Get followed user IDs
+  const { data: follows } = await supabase
+    .from('follows')
+    .select('following_id')
+    .eq('follower_id', user.id)
+  const followingIds = follows?.map((f) => f.following_id) || []
+
+  // Get joined community IDs
+  const { data: memberships } = await supabase
+    .from('community_members')
+    .select('community_id')
+    .eq('user_id', user.id)
+  const communityIds = memberships?.map((m) => m.community_id) || []
+
+  if (followingIds.length === 0 && communityIds.length === 0) return { posts: [] as Post[], total: 0 }
+
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  // Build OR filter: posts from followed users OR from joined communities
+  const conditions: string[] = []
+  if (followingIds.length > 0) conditions.push(`user_id.in.(${followingIds.join(',')})`)
+  if (communityIds.length > 0) conditions.push(`community_id.in.(${communityIds.join(',')})`)
+
+  const { data, error, count } = await supabase
+    .from('posts')
+    .select('*, user:profiles!posts_user_id_fkey(id, name, username, avatar)', { count: 'exact' })
+    .or(conditions.join(','))
     .order('created_at', { ascending: false })
     .range(from, to)
 

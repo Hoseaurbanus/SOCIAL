@@ -1,4 +1,5 @@
 import { supabase } from '@/config/supabase'
+import { createNotification } from '@/api/notifications'
 import type { Conversation, Message } from '@/types/api'
 
 export async function fetchConversations() {
@@ -94,6 +95,17 @@ export async function sendMessage(conversationId: string, content: string) {
     .single()
 
   if (error) throw error
+  const { data: participants } = await supabase
+    .from('conversation_participants')
+    .select('user_id')
+    .eq('conversation_id', conversationId)
+    .neq('user_id', user.id)
+
+  if (participants) {
+    for (const p of participants) {
+      await createNotification(p.user_id, user.id, 'message', undefined, 'sent you a message')
+    }
+  }
   return data as Message
 }
 
