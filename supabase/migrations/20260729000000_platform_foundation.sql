@@ -924,15 +924,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS update_spaces_updated_at ON public.spaces;
 CREATE TRIGGER update_spaces_updated_at BEFORE UPDATE ON public.spaces
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS update_content_items_updated_at ON public.content_items;
 CREATE TRIGGER update_content_items_updated_at BEFORE UPDATE ON public.content_items
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS update_comments_v2_updated_at ON public.comments_v2;
 CREATE TRIGGER update_comments_v2_updated_at BEFORE UPDATE ON public.comments_v2
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
