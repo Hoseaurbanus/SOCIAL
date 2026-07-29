@@ -16,6 +16,7 @@ import { useFeedPosts, useForYouPosts, useFollowingPosts, useTrendingPosts, useT
 import { useContentFeed, useToggleReaction } from '@/hooks/use-content'
 import { useStories, useCreateStory, useReplyToStory } from '@/hooks/use-stories'
 import { useAuthStore } from '@/stores/auth-store'
+import { useProfile } from '@/hooks/use-profile'
 import { useToast } from '@/hooks/use-toast'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import type { StoryDraft } from '@/components/organisms/story-creator'
@@ -34,6 +35,7 @@ export default function HomePage() {
   const [showStoryCreator, setShowStoryCreator] = useState(false)
   const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null)
   const user = useAuthStore((s) => s.user)
+  const { data: profile } = useProfile(user?.username || '')
   const { direction, scrollY } = useScrollDirection(5)
   const feedQuery = useFeedPosts()
   const forYouQuery = useForYouPosts()
@@ -190,7 +192,7 @@ export default function HomePage() {
           const idx = stories.findIndex((s) => s.id === id)
           if (idx >= 0) setViewingStoryIndex(idx)
         }}
-        userAvatar={user?.avatar}
+        userAvatar={profile?.avatar}
         currentUserId={user?.id}
         onAddStory={() => setShowStoryCreator(true)}
       />
@@ -202,7 +204,7 @@ export default function HomePage() {
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
           <Link to={user?.username ? `/profile/${user.username}` : '/profile'} className="flex-shrink-0">
-            <Avatar src={user?.avatar} alt={user?.name || 'Your profile'} size="md" />
+            <Avatar src={profile?.avatar} alt={profile?.name || 'Your profile'} size="md" />
           </Link>
           <button
             onClick={() => setShowCompose(true)}
