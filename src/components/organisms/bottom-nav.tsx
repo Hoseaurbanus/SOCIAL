@@ -1,20 +1,20 @@
 import { NavLink, useLocation } from 'react-router'
-import { Home, Compass, Grid3X3, MessageCircle, Bell } from 'lucide-react'
+import { Home, Compass, Grid3X3, MessageCircle, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useUnreadCount } from '@/hooks/use-notifications'
 import { useUnreadMessageCount } from '@/hooks/use-messages'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
+import { useAuthStore } from '@/stores/auth-store'
 
 const navItems = [
   { to: '/home', icon: Home, label: 'Home' },
   { to: '/discover', icon: Compass, label: 'Discover' },
   { to: '/spaces', icon: Grid3X3, label: 'Spaces' },
   { to: '/messages', icon: MessageCircle, label: 'Messages', showBadge: true },
-  { to: '/notifications', icon: Bell, label: 'Alerts', showBadge: true },
+  { to: '/profile', icon: User, label: 'Profile' },
 ]
 
 export function BottomNav() {
-  const { data: unreadCount = 0 } = useUnreadCount()
+  const user = useAuthStore((s) => s.user)
   const { data: unreadMessages = 0 } = useUnreadMessageCount()
   const { direction, scrollY } = useScrollDirection(10)
   const location = useLocation()
@@ -35,17 +35,19 @@ export function BottomNav() {
     >
       <div className="flex items-center justify-around h-16 px-1">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.to ||
+          const profilePath = user?.username ? `/profile/${user.username}` : '/profile'
+          const to = item.to === '/profile' ? profilePath : item.to
+          const isActive = location.pathname === to ||
             (item.to === '/messages' && location.pathname.startsWith('/messages')) ||
-            (item.to === '/spaces' && location.pathname.startsWith('/space'))
-          const badgeCount = item.to === '/notifications' ? unreadCount :
-            item.to === '/messages' ? unreadMessages : 0
+            (item.to === '/spaces' && location.pathname.startsWith('/space')) ||
+            (item.to === '/profile' && location.pathname.startsWith('/profile'))
+          const badgeCount = item.to === '/messages' ? unreadMessages : 0
           const showBadge = item.showBadge && badgeCount > 0
 
           return (
             <NavLink
               key={item.to}
-              to={item.to}
+              to={to}
               className="relative flex flex-col items-center justify-center min-w-[56px] h-full py-2"
             >
               <div className="relative flex flex-col items-center gap-1">
