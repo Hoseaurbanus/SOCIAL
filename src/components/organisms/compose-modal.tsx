@@ -5,6 +5,7 @@ import { Avatar } from '@/components/atoms/avatar'
 import { Button } from '@/components/atoms/button'
 import { EmojiPicker } from '@/components/molecules/emoji-picker'
 import { useCreatePost } from '@/hooks/use-posts'
+import { useCreateContentItem } from '@/hooks/use-content'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import { useMySpaces } from '@/hooks/use-spaces'
@@ -113,6 +114,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
   const createPost = useCreatePost()
+  const createContentItem = useCreateContentItem()
   const user = useAuthStore((s) => s.user)
   const toast = useToast((s) => s.toast)
   const { data: spaces = [] } = useMySpaces()
@@ -216,30 +218,61 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
     setError('')
     try {
       const media = await uploadMedia()
-      createPost.mutate(
-        {
-          content: content.trim(),
-          images: media.images,
-          videoUrl: media.videoUrl,
-          linkPreview: linkPreview || undefined,
-          communityId: selectedSpaceId || undefined,
-        },
-        {
-          onSuccess: () => {
-            setContent('')
-            setSelectedImages([])
-            setSelectedVideo(null)
-            setLinkPreview(null)
-            setError('')
-            onClose()
-            toast({ title: 'Post created!', variant: 'success' })
+
+      if (selectedSpaceId) {
+        const contentMedia = [
+          ...(media.images || []).map((url) => ({ type: 'image' as const, url })),
+          ...(media.videoUrl ? [{ type: 'video' as const, url: media.videoUrl }] : []),
+        ]
+
+        createContentItem.mutate(
+          {
+            body: content.trim(),
+            spaceId: selectedSpaceId,
+            media: contentMedia.length > 0 ? contentMedia : undefined,
+            metadata: linkPreview ? { linkPreview } : undefined,
           },
-          onError: (err) => {
-            setError(err.message || 'Failed to create post')
-            toast({ title: err.message || 'Failed to create post', variant: 'error' })
+          {
+            onSuccess: () => {
+              setContent('')
+              setSelectedImages([])
+              setSelectedVideo(null)
+              setLinkPreview(null)
+              setError('')
+              onClose()
+              toast({ title: 'Posted to space!', variant: 'success' })
+            },
+            onError: (err) => {
+              setError(err.message || 'Failed to create post')
+              toast({ title: err.message || 'Failed to create post', variant: 'error' })
+            },
+          }
+        )
+      } else {
+        createPost.mutate(
+          {
+            content: content.trim(),
+            images: media.images,
+            videoUrl: media.videoUrl,
+            linkPreview: linkPreview || undefined,
           },
-        }
-      )
+          {
+            onSuccess: () => {
+              setContent('')
+              setSelectedImages([])
+              setSelectedVideo(null)
+              setLinkPreview(null)
+              setError('')
+              onClose()
+              toast({ title: 'Post created!', variant: 'success' })
+            },
+            onError: (err) => {
+              setError(err.message || 'Failed to create post')
+              toast({ title: err.message || 'Failed to create post', variant: 'error' })
+            },
+          }
+        )
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to upload media')
     }
@@ -312,7 +345,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
             <X className="h-5 w-5" />
           </button>
           <h2 className="text-base font-semibold text-text-primary">New Post</h2>
-          <Button size="sm" disabled={!canPost} loading={createPost.isPending || uploading} onClick={handleSubmit}>
+          <Button size="sm" disabled={!canPost} loading={createPost.isPending || createContentItem.isPending || uploading} onClick={handleSubmit}>
             Post
           </Button>
         </div>

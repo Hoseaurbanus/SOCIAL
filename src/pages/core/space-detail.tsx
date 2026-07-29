@@ -2,20 +2,25 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { ArrowLeft, Settings, Users, Loader2, Plus, Lock, Globe } from 'lucide-react';
 import { useSpace, useJoinSpace, useLeaveSpace, useSpaceMembers } from '@/hooks/use-spaces';
+import { useContentItems } from '@/hooks/use-content';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/atoms/button';
 import { EmptyState } from '@/components/molecules/empty-state';
+import { ContentCard } from '@/components/molecules/content-card';
 
 export default function SpaceDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'about' | 'settings'>('feed');
-  
+
   const { data: space, isLoading: spaceLoading } = useSpace(slug || '');
   const { data: members, isLoading: membersLoading } = useSpaceMembers(space?.id || '');
+  const { data: contentData, isLoading: contentLoading } = useContentItems({
+    spaceId: space?.id || '',
+  });
   const joinMutation = useJoinSpace();
   const leaveMutation = useLeaveSpace();
-  
+
   if (spaceLoading) {
     return (
       <div className="min-h-screen bg-bg-primary flex items-center justify-center">
@@ -23,7 +28,7 @@ export default function SpaceDetailPage() {
       </div>
     );
   }
-  
+
   if (!space) {
     return (
       <div className="min-h-screen bg-bg-primary">
@@ -35,30 +40,32 @@ export default function SpaceDetailPage() {
       </div>
     );
   }
-  
+
   const isOwner = space.member_role === 'owner';
   const isAdmin = space.member_role === 'admin' || isOwner;
-  
+
   const handleJoin = () => {
     if (!user) return;
     joinMutation.mutate(space.id);
   };
-  
+
   const handleLeave = () => {
     if (!user) return;
     leaveMutation.mutate(space.id);
   };
-  
+
   const tabs: { id: 'feed' | 'members' | 'about' | 'settings'; label: string; icon: string }[] = [
     { id: 'feed', label: 'Feed', icon: '📝' },
     { id: 'members', label: 'Members', icon: '👥' },
     { id: 'about', label: 'About', icon: 'ℹ️' },
   ];
-  
+
   if (isAdmin) {
     tabs.push({ id: 'settings', label: 'Settings', icon: '⚙️' });
   }
-  
+
+  const contentItems = contentData?.items || [];
+
   return (
     <div className="min-h-screen bg-bg-primary pb-20">
       <div className="sticky top-0 z-20 glass border-b border-border-primary">
@@ -86,7 +93,7 @@ export default function SpaceDetailPage() {
             </Link>
           )}
         </div>
-        
+
         <div className="flex px-4 gap-1">
           {tabs.map(tab => (
             <button
@@ -103,7 +110,7 @@ export default function SpaceDetailPage() {
           ))}
         </div>
       </div>
-      
+
       <div className="px-4 py-4 border-b border-border-primary">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center text-3xl">
@@ -116,7 +123,7 @@ export default function SpaceDetailPage() {
             )}
           </div>
         </div>
-        
+
         <div className="flex gap-2 mt-4">
           {space.is_member ? (
             <>
@@ -158,7 +165,7 @@ export default function SpaceDetailPage() {
           )}
         </div>
       </div>
-      
+
       <div className="px-4 py-4">
         {activeTab === 'feed' && (
           <div className="space-y-4">
@@ -179,9 +186,28 @@ export default function SpaceDetailPage() {
                 <p className="text-text-secondary">Join this space to see posts and participate</p>
               </div>
             )}
+
+            {contentLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-accent" />
+              </div>
+            ) : contentItems.length === 0 ? (
+              <EmptyState
+                icon="📝"
+                title="No posts yet"
+                description="Be the first to post in this space!"
+              />
+            ) : (
+              contentItems.map(item => (
+                <ContentCard
+                  key={item.id}
+                  item={item}
+                />
+              ))
+            )}
           </div>
         )}
-        
+
         {activeTab === 'members' && (
           <div className="space-y-2">
             {membersLoading ? (
@@ -216,7 +242,7 @@ export default function SpaceDetailPage() {
             )}
           </div>
         )}
-        
+
         {activeTab === 'about' && (
           <div className="space-y-4">
             <div className="p-4 rounded-2xl bg-bg-secondary">
