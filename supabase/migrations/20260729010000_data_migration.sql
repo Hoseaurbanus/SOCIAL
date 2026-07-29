@@ -11,8 +11,8 @@ SELECT
   COALESCE(c.description, ''),
   COALESCE(c.icon, '🌐'),
   LOWER(REGEXP_REPLACE(c.name, '[^a-zA-Z0-9]+', '-', 'g')) || '-' || SUBSTRING(c.id::text, 1, 8),
-  'community'::public.space_type,
-  'public'::public.space_visibility,
+  'community',
+  'public',
   c.created_by,
   COALESCE(c.member_count, 1),
   c.created_at,
@@ -28,11 +28,11 @@ SELECT
   cm.community_id,
   cm.user_id,
   CASE
-    WHEN cm.user_id = c.created_by THEN 'owner'::public.space_member_role
-    ELSE 'member'::public.space_member_role
+    WHEN cm.user_id = c.created_by THEN 'owner'
+    ELSE 'member'
   END,
   (SELECT id FROM public.roles WHERE name = CASE WHEN cm.user_id = c.created_by THEN 'owner' ELSE 'member' END LIMIT 1),
-  COALESCE(cm.joined_at, NOW())
+  NOW()
 FROM public.community_members cm
 JOIN public.communities c ON c.id = cm.community_id
 ON CONFLICT (space_id, user_id) DO NOTHING;
@@ -49,7 +49,7 @@ SELECT
   p.id,
   p.user_id,
   CASE WHEN p.community_id IS NOT NULL THEN p.community_id ELSE NULL END,
-  'post'::public.content_type,
+  'post',
   NULL,
   COALESCE(p.content, ''),
   CASE
@@ -59,7 +59,7 @@ SELECT
       (SELECT json_agg(json_build_object('type', 'image', 'url', img)) FROM unnest(p.images) AS img)::jsonb
     ELSE '[]'::jsonb
   END,
-  'public'::public.content_visibility,
+  'public',
   FALSE,
   COALESCE(p.likes_count, 0),
   COALESCE(p.comments_count, 0),
@@ -103,11 +103,11 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================
 -- 6. follows → relationships (type = 'follow')
 -- ============================================================
-INSERT INTO public.relationships (user_id, target_id, relationship_type, created_at)
+INSERT INTO public.relationships (source_user_id, target_user_id, relationship_type, created_at)
 SELECT
   f.follower_id,
   f.following_id,
-  'follow'::public.relationship_type,
+  'follow',
   f.created_at
 FROM public.follows f
 ON CONFLICT DO NOTHING;
