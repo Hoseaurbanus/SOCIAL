@@ -13,6 +13,7 @@ import { useFeedPosts, useFollowingPosts, useTrendingPosts, useToggleLike, useTo
 import { useStories, useCreateStory, useReplyToStory } from '@/hooks/use-stories'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
+import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import type { StoryDraft } from '@/components/organisms/story-creator'
 
 const tabs = [
@@ -29,6 +30,7 @@ export default function HomePage() {
   const [showStoryCreator, setShowStoryCreator] = useState(false)
   const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null)
   const user = useAuthStore((s) => s.user)
+  const { direction, scrollY } = useScrollDirection(5)
   const feedQuery = useFeedPosts()
   const followingQuery = useFollowingPosts()
   const trendingQuery = useTrendingPosts()
@@ -142,8 +144,13 @@ export default function HomePage() {
       )}
 
       {/* Feed Tabs */}
-      <div className="relative border-b border-border sticky top-16 bg-bg-primary z-10">
-        <div className="flex gap-1 overflow-x-auto scrollbar-none px-2" role="tablist" aria-label="Feed filters">
+      <div
+        className={cn(
+          'sticky border-b border-border bg-bg-primary transition-all duration-300 z-20',
+          direction === 'down' && scrollY > 100 ? 'top-0' : 'top-16'
+        )}
+      >
+        <div className="flex gap-1 overflow-x-auto scrollbar-none px-2 py-1" role="tablist" aria-label="Feed filters">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -151,7 +158,7 @@ export default function HomePage() {
               aria-selected={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-200 rounded-lg my-1',
+                'flex items-center gap-2 px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-all duration-200 rounded-xl',
                 activeTab === tab.id
                   ? 'bg-accent text-white shadow-sm'
                   : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
