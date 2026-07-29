@@ -23,8 +23,24 @@ export default function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const toast = useToast((s) => s.toast)
+  const loadedServerMessages = useRef(false)
 
-  const messages = localMessages.length > 0 ? localMessages : (messagesData as Message[])
+  const serverMessages = (messagesData as Message[]) || []
+
+  useEffect(() => {
+    if (serverMessages.length > 0) {
+      loadedServerMessages.current = true
+      setLocalMessages((prev) => {
+        const serverIds = new Set(serverMessages.map((m) => m.id))
+        const newLocal = prev.filter((m) => !serverIds.has(m.id))
+        return [...serverMessages, ...newLocal]
+      })
+    }
+  }, [serverMessages])
+
+  const messages = loadedServerMessages.current
+    ? localMessages
+    : serverMessages
 
   const handleNewMessage = useCallback((msg: Message) => {
     setLocalMessages((prev) => {

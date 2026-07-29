@@ -44,6 +44,7 @@ export async function fetchConversations() {
     .select('*')
     .in('conversation_id', convIds)
     .order('created_at', { ascending: false })
+    .limit(convIds.length)
 
   // Group last messages by conversation_id (take first per conversation)
   const lastMsgMap = new Map<string, Message>()
@@ -54,14 +55,17 @@ export async function fetchConversations() {
   })
 
   // Build results
-  const results: Conversation[] = (conversations || []).map((conv: any) => ({
-    id: conv.id,
-    participants: (conv.participants || [])
-      .map((p: any) => p.user)
-      .filter((u: any) => u && u.id !== user.id),
-    lastMessage: lastMsgMap.get(conv.id),
-    updatedAt: conv.created_at,
-  }))
+  const results: Conversation[] = (conversations || []).map((conv: any) => {
+    const lastMsg = lastMsgMap.get(conv.id)
+    return {
+      id: conv.id,
+      participants: (conv.participants || [])
+        .map((p: any) => p.user)
+        .filter((u: any) => u && u.id !== user.id),
+      lastMessage: lastMsg,
+      updatedAt: lastMsg?.created_at || conv.created_at,
+    }
+  })
 
   return results
 }
@@ -113,6 +117,26 @@ export async function createConversation(otherUserId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
+  // Check for existing conversation between these two users
+  const { data: myParticipations } = await supabase
+    .from('conversation_participants')
+    .select('conversation_id')
+    .eq('user_id', user.id)
+
+  if (myParticipations?.length) {
+    const myConvIds = myParticipations.map((p) => p.conversation_id)
+    const { data: existing } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', otherUserId)
+      .in('conversation_id', myConvIds)
+      .limit(1)
+      .maybeSingle()
+
+    if (existing) return existing.conversation_id
+  }
+
+  // Create new conversation
   const { data: conv, error: convError } = await supabase
     .from('conversations')
     .insert({})

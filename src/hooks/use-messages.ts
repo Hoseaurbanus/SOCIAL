@@ -110,7 +110,7 @@ export function useUnreadMessageCount() {
       const { count } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
-        .eq('read', false)
+        .is('read_at', null)
         .neq('sender_id', user.id)
       return count || 0
     },

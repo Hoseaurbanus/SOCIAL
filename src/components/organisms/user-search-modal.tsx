@@ -4,6 +4,7 @@ import { X, Search } from 'lucide-react'
 import { Avatar } from '@/components/atoms/avatar'
 import { useCreateConversation } from '@/hooks/use-messages'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/config/supabase'
 import type { User } from '@/types/api'
 
@@ -15,6 +16,7 @@ interface UserSearchModalProps {
 export function UserSearchModal({ isOpen, onClose }: UserSearchModalProps) {
   const navigate = useNavigate()
   const currentUser = useAuthStore((s) => s.user)
+  const toast = useToast((s) => s.toast)
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<User[]>([])
   const [searching, setSearching] = useState(false)
@@ -24,19 +26,28 @@ export function UserSearchModal({ isOpen, onClose }: UserSearchModalProps) {
     setSearch(query)
     if (query.length < 2) { setResults([]); return }
     setSearching(true)
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, name, username, avatar')
-      .or(`name.ilike.%${query}%,username.ilike.%${query}%`)
-      .limit(10)
-    setResults(((data || []) as User[]).filter((u) => u.id !== currentUser?.id))
-    setSearching(false)
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, name, username, avatar')
+        .or(`name.ilike.%${query}%,username.ilike.%${query}%`)
+        .limit(10)
+      setResults(((data || []) as User[]).filter((u) => u.id !== currentUser?.id))
+    } catch {
+      setResults([])
+    } finally {
+      setSearching(false)
+    }
   }
 
   const handleSelectUser = async (userId: string) => {
-    const convId = await createConversation.mutateAsync(userId)
-    onClose()
-    navigate(`/messages/${convId}`)
+    try {
+      const convId = await createConversation.mutateAsync(userId)
+      onClose()
+      navigate(`/messages/${convId}`)
+    } catch {
+      toast({ title: 'Failed to start conversation', variant: 'error' })
+    }
   }
 
   if (!isOpen) return null
