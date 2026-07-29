@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router'
-import { ChevronLeft, Settings, MapPin, LinkIcon, Calendar, X, MessageCircle, UserPlus, UserCheck, MoreHorizontal, Shield, Crown, Sparkles } from 'lucide-react'
+import { ChevronLeft, Settings, MapPin, LinkIcon, Calendar, X, MessageCircle, UserPlus, UserCheck, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/atoms/button'
 import { Avatar } from '@/components/atoms/avatar'
