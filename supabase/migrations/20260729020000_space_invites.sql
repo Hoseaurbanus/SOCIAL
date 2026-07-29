@@ -25,60 +25,68 @@ CREATE INDEX IF NOT EXISTS idx_space_invites_space_id ON space_invites(space_id)
 CREATE INDEX IF NOT EXISTS idx_space_invites_token ON space_invites(token);
 CREATE INDEX IF NOT EXISTS idx_space_invites_invited_user_id ON space_invites(invited_user_id);
 
--- 4. RLS policies for space_invites
-ALTER TABLE space_invites ENABLE ROW LEVEL SECURITY;
-
--- Members can see invites they created for their spaces
-CREATE POLICY "Members can view own invites"
-  ON space_invites FOR SELECT
-  USING (
-    created_by = auth.uid()
-    OR space_id IN (
-      SELECT space_id FROM space_members WHERE user_id = auth.uid()
-    )
+-- 4. SECURITY DEFINER helper functions (avoids RLS recursion)
+CREATE OR REPLACE FUNCTION is_space_member(space_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM space_members
+    WHERE space_id = space_uuid AND user_id = auth.uid()
   );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+CREATE OR REPLACE FUNCTION is_space_admin(space_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM space_members
+    WHERE space_id = space_uuid AND user_id = auth.uid()
+    AND role IN ('owner', 'admin')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- 5. RLS policies for space_invites (use SECURITY DEFINER functions)
+ALTER TABLE space_invites ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can validate a token (for join page)
 CREATE POLICY "Anyone can validate invite token"
   ON space_invites FOR SELECT
   USING (true);
 
--- Owner/admin can create invites
-CREATE POLICY "Owner/admin can create invites"
+-- Creator or space admin can view invites
+CREATE POLICY "Creator or admin can view invites"
+  ON space_invites FOR SELECT
+  USING (
+    created_by = auth.uid()
+    OR is_space_admin(space_id)
+  );
+
+-- Space admin can create invites
+CREATE POLICY "Admin can create invites"
   ON space_invites FOR INSERT
   WITH CHECK (
     created_by = auth.uid()
-    AND space_id IN (
-      SELECT space_id FROM space_members
-      WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin')
-    )
+    AND is_space_admin(space_id)
   );
 
--- Creator or owner/admin can revoke
-CREATE POLICY "Creator or owner/admin can revoke invites"
+-- Creator or space admin can revoke
+CREATE POLICY "Creator or admin can revoke invites"
   ON space_invites FOR UPDATE
   USING (
     created_by = auth.uid()
-    OR space_id IN (
-      SELECT space_id FROM space_members
-      WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin')
-    )
+    OR is_space_admin(space_id)
   );
 
--- Owner/admin can delete invites
-CREATE POLICY "Owner/admin can delete invites"
+-- Space admin can delete invites
+CREATE POLICY "Admin can delete invites"
   ON space_invites FOR DELETE
   USING (
-    space_id IN (
-      SELECT space_id FROM space_members
-      WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin')
-    )
+    is_space_admin(space_id)
   );
 
--- 5. RPC function to increment invite usage
+-- 6. RPC function to increment invite usage
 CREATE OR REPLACE FUNCTION increment_invite_usage(invite_token TEXT)
 RETURNS VOID AS $$
 BEGIN
@@ -88,7 +96,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 6. RPC function to check if space requires approval
+-- 7. RPC function to check if space requires approval
 CREATE OR REPLACE FUNCTION space_requires_approval(space_uuid UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
