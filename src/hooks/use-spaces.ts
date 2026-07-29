@@ -106,7 +106,7 @@ export function useUpdateSpace() {
     }) => updateSpace(spaceId, updates),
     onSuccess: (_, { spaceId }) => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
-      queryClient.invalidateQueries({ queryKey: ['spaces', spaceId] });
+      queryClient.invalidateQueries({ queryKey: ['spaces', 'id', spaceId] });
     },
   });
 }
@@ -144,7 +144,7 @@ export function useUpdateSpaceModules() {
     }) => updateSpaceModules(spaceId, modules),
     onSuccess: (_, { spaceId }) => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
-      queryClient.invalidateQueries({ queryKey: ['spaces', spaceId] });
+      queryClient.invalidateQueries({ queryKey: ['spaces', 'id', spaceId] });
     },
   });
 }

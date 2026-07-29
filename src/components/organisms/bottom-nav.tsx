@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router'
-import { Home, Compass, MessageCircle, Bell, User } from 'lucide-react'
+import { Home, Compass, Grid3X3, MessageCircle, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUnreadCount } from '@/hooks/use-notifications'
 import { useUnreadMessageCount } from '@/hooks/use-messages'
@@ -8,9 +8,9 @@ import { useScrollDirection } from '@/hooks/use-scroll-direction'
 const navItems = [
   { to: '/home', icon: Home, label: 'Home' },
   { to: '/discover', icon: Compass, label: 'Discover' },
+  { to: '/spaces', icon: Grid3X3, label: 'Spaces' },
   { to: '/messages', icon: MessageCircle, label: 'Messages', showBadge: true },
   { to: '/notifications', icon: Bell, label: 'Alerts', showBadge: true },
-  { to: '/profile', icon: User, label: 'Profile' },
 ]
 
 export function BottomNav() {

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router'
-import { Search, Bell, MessageCircle, X } from 'lucide-react'
+import { Search, Bell, MessageCircle, Grid3X3, X } from 'lucide-react'
 import { useUnreadCount } from '@/hooks/use-notifications'
 import { SmugflexLogo } from '@/components/atoms/smugflex-logo'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
@@ -130,6 +130,19 @@ export function Header() {
           >
             {searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
           </button>
+
+          {/* Spaces */}
+          <Link
+            to="/spaces"
+            className={cn(
+              'relative p-2.5 rounded-2xl text-text-secondary transition-all duration-200',
+              'hover:bg-accent-light hover:text-accent active:scale-95',
+              location.pathname.startsWith('/space') && 'bg-accent-light text-accent'
+            )}
+            aria-label="Spaces"
+          >
+            <Grid3X3 className="h-5 w-5" />
+          </Link>
 
           {/* Notifications */}
           <Link

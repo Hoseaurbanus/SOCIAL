@@ -432,7 +432,7 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
                       )}
                     >
                       <span className="text-lg">🌐</span>
-                      <span>No space (和个人动态)</span>
+                      <span>No space (global feed)</span>
                     </button>
                     {spaces.map((s) => (
                       <button

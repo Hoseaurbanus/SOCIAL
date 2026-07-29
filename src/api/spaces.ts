@@ -143,6 +143,8 @@ export async function createSpace(
   
   if (slugError) throw slugError;
   
+  const { data: ownerRole } = await supabase.from('roles').select('id').eq('name', 'owner').single();
+
   const { data, error } = await supabase
     .from('spaces')
     .insert({
@@ -156,16 +158,16 @@ export async function createSpace(
     })
     .select()
     .single();
-  
+
   if (error) throw error;
-  
+
   const { error: memberError } = await supabase
     .from('space_members')
     .insert({
       space_id: data.id,
       user_id: user.id,
       role: 'owner',
-      role_id: (await supabase.from('roles').select('id').eq('name', 'owner').single()).data?.id,
+      role_id: ownerRole?.id || null,
     });
   
   if (memberError) throw memberError;
@@ -179,13 +181,15 @@ export async function joinSpace(spaceId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
   
+  const { data: memberRole } = await supabase.from('roles').select('id').eq('name', 'member').single();
+
   const { error } = await supabase
     .from('space_members')
     .insert({
       space_id: spaceId,
       user_id: user.id,
       role: 'member',
-      role_id: (await supabase.from('roles').select('id').eq('name', 'member').single()).data?.id,
+      role_id: memberRole?.id || null,
     });
   
   if (error) throw error;
@@ -219,7 +223,7 @@ export async function leaveSpace(spaceId: string): Promise<void> {
 export async function fetchSpaceMembers(spaceId: string): Promise<SpaceMember[]> {
   const { data, error } = await supabase
     .from('space_members')
-    .select('*')
+    .select('*, user:profiles!space_members_user_id_fkey(id, name, username, avatar)')
     .eq('space_id', spaceId)
     .order('joined_at');
   

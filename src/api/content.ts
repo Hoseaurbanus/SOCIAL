@@ -1,5 +1,5 @@
 import { supabase } from '@/config/supabase';
-import type { ContentItem, ContentType, ContentVisibility, Reaction } from '@/types/content';
+import type { ContentItem, ContentType, ContentVisibility, Reaction, Comment } from '@/types/content';
 
 const TABLE_MISSING = ['42P01', '42501', 'PGRST301'];
 
@@ -198,4 +198,69 @@ export async function checkReactionStatus(
   const reactionMap: Record<string, boolean> = {};
   data?.forEach(r => { reactionMap[r.content_item_id] = true; });
   return reactionMap;
+}
+
+// ============================================================
+// Comments (comments_v2)
+// ============================================================
+
+export async function createComment(
+  contentItemId: string,
+  body: string,
+  parentCommentId?: string
+): Promise<Comment> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('comments_v2')
+    .insert({
+      content_item_id: contentItemId,
+      author_id: user.id,
+      parent_comment_id: parentCommentId || null,
+      body,
+    })
+    .select('*, author:profiles!comments_v2_author_id_fkey(id, name, username, avatar)')
+    .single();
+
+  if (error) throw error;
+
+  try {
+    await supabase.rpc('increment_content_comments', { content_item_id: contentItemId });
+  } catch {
+    // Counter may go stale
+  }
+
+  return data;
+}
+
+export async function fetchComments(contentItemId: string): Promise<Comment[]> {
+  const { data, error } = await supabase
+    .from('comments_v2')
+    .select('*, author:profiles!comments_v2_author_id_fkey(id, name, username, avatar)')
+    .eq('content_item_id', contentItemId)
+    .eq('is_deleted', false)
+    .order('created_at');
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function deleteComment(commentId: string, contentItemId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('comments_v2')
+    .update({ is_deleted: true })
+    .eq('id', commentId)
+    .eq('author_id', user.id);
+
+  if (error) throw error;
+
+  try {
+    await supabase.rpc('decrement_content_comments', { content_item_id: contentItemId });
+  } catch {
+    // Counter may go stale
+  }
 }

@@ -38,6 +38,7 @@ const HelpPage = lazy(() => import('./pages/social/help'))
 const SpacesPage = lazy(() => import('./pages/core/spaces-page'))
 const SpaceDetailPage = lazy(() => import('./pages/core/space-detail'))
 const SpaceSettingsPage = lazy(() => import('./pages/core/space-settings'))
+const ContentDetailPage = lazy(() => import('./pages/core/content-detail'))
 const NotFoundPage = lazy(() => import('./pages/errors/not-found'))
 
 export const router = createBrowserRouter([
@@ -75,6 +76,7 @@ export const router = createBrowserRouter([
           { path: 'spaces', element: <Suspense fallback={<SuspenseLoader />}><SpacesPage /></Suspense> },
           { path: 'space/:slug', element: <Suspense fallback={<SuspenseLoader />}><SpaceDetailPage /></Suspense> },
           { path: 'space/:slug/settings', element: <Suspense fallback={<SuspenseLoader />}><SpaceSettingsPage /></Suspense> },
+          { path: 'content/:contentId', element: <Suspense fallback={<SuspenseLoader />}><ContentDetailPage /></Suspense> },
           { path: 'profile/:username?', element: <Suspense fallback={<SuspenseLoader />}><ProfilePage /></Suspense> },
           { path: 'settings', element: <Suspense fallback={<SuspenseLoader />}><SettingsPage /></Suspense> },
           { path: 'settings/privacy', element: <Suspense fallback={<SuspenseLoader />}><PrivacyPage /></Suspense> },

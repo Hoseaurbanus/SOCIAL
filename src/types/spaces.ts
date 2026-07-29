@@ -49,6 +49,12 @@ export interface SpaceMember {
   status: SpaceMemberStatus;
   role_id: string | null;
   joined_at: string;
+  user?: {
+    id: string;
+    name: string;
+    username: string;
+    avatar: string | null;
+  };
 }
 
 export interface SpaceWithMembership extends Space {

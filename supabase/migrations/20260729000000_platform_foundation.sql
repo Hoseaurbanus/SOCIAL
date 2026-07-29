@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS public.space_members (
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'moderator', 'member')),
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'pending', 'banned', 'muted')),
-  role_id UUID,
+  role_id UUID REFERENCES public.roles(id),
   joined_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (space_id, user_id)
 );
@@ -339,6 +339,15 @@ CREATE INDEX IF NOT EXISTS idx_relationships_source ON public.relationships(sour
 CREATE INDEX IF NOT EXISTS idx_relationships_target ON public.relationships(target_user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_user_id ON public.audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON public.audit_log(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_content_items_visibility ON public.content_items(visibility);
+CREATE INDEX IF NOT EXISTS idx_content_items_is_pinned ON public.content_items(is_pinned) WHERE is_pinned = TRUE;
+CREATE INDEX IF NOT EXISTS idx_comments_v2_author_id ON public.comments_v2(author_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_from_user_id ON public.notifications(from_user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON public.messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_relationships_type ON public.relationships(relationship_type);
+CREATE INDEX IF NOT EXISTS idx_stories_audience ON public.stories(audience);
+CREATE INDEX IF NOT EXISTS idx_space_members_role ON public.space_members(role);
+CREATE INDEX IF NOT EXISTS idx_space_members_status ON public.space_members(status);
 
 -- ============================================================
 -- RPC FUNCTIONS
@@ -452,6 +461,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Counter functions for communities (legacy)
+CREATE OR REPLACE FUNCTION public.increment_community_members(community_id uuid)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.communities SET member_count = member_count + 1 WHERE id = community_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.decrement_community_members(community_id uuid)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.communities SET member_count = GREATEST(member_count - 1, 0) WHERE id = community_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Conversation helper
 CREATE OR REPLACE FUNCTION public.create_conversation_with_participant(other_user_id uuid)
 RETURNS uuid AS $$
@@ -551,6 +575,8 @@ DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can delete own profile" ON public.profiles;
+CREATE POLICY "Users can delete own profile" ON public.profiles FOR DELETE USING (auth.uid() = id);
 
 -- Posts (legacy)
 DROP POLICY IF EXISTS "Posts are viewable by everyone" ON public.posts;
@@ -622,7 +648,6 @@ CREATE POLICY "Users can remove own reactions" ON public.story_reactions FOR DEL
 DROP POLICY IF EXISTS "Story owner can see views" ON public.story_views;
 CREATE POLICY "Story owner can see views" ON public.story_views FOR SELECT USING (
   EXISTS (SELECT 1 FROM public.stories WHERE id = story_id AND user_id = auth.uid())
-  OR auth.uid() IS NOT NULL
 );
 DROP POLICY IF EXISTS "Users can view stories" ON public.story_views;
 CREATE POLICY "Users can view stories" ON public.story_views FOR INSERT WITH CHECK (auth.uid() = user_id);
@@ -672,8 +697,8 @@ CREATE POLICY "Sender can update own messages" ON public.messages FOR UPDATE USI
 -- Notifications
 DROP POLICY IF EXISTS "Users can see own notifications" ON public.notifications;
 CREATE POLICY "Users can see own notifications" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "System can create notifications" ON public.notifications;
-CREATE POLICY "System can create notifications" ON public.notifications FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Users can create notifications" ON public.notifications;
+CREATE POLICY "Users can create notifications" ON public.notifications FOR INSERT WITH CHECK (auth.uid() = from_user_id);
 DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
 CREATE POLICY "Users can update own notifications" ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
 
@@ -749,9 +774,27 @@ CREATE POLICY "Public content is viewable by everyone" ON public.content_items F
 DROP POLICY IF EXISTS "Users can create content" ON public.content_items;
 CREATE POLICY "Users can create content" ON public.content_items FOR INSERT WITH CHECK (auth.uid() = author_id);
 DROP POLICY IF EXISTS "Authors can update own content" ON public.content_items;
-CREATE POLICY "Authors can update own content" ON public.content_items FOR UPDATE USING (auth.uid() = author_id);
+CREATE POLICY "Authors can update own content" ON public.content_items FOR UPDATE USING (
+  auth.uid() = author_id
+  OR (space_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.space_members sm
+    JOIN public.roles r ON sm.role_id = r.id
+    WHERE sm.space_id = content_items.space_id
+    AND sm.user_id = auth.uid()
+    AND ('content.edit' = ANY(r.permissions))
+  ))
+);
 DROP POLICY IF EXISTS "Authors can delete own content" ON public.content_items;
-CREATE POLICY "Authors can delete own content" ON public.content_items FOR DELETE USING (auth.uid() = author_id);
+CREATE POLICY "Authors can delete own content" ON public.content_items FOR DELETE USING (
+  auth.uid() = author_id
+  OR (space_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.space_members sm
+    JOIN public.roles r ON sm.role_id = r.id
+    WHERE sm.space_id = content_items.space_id
+    AND sm.user_id = auth.uid()
+    AND ('content.delete' = ANY(r.permissions))
+  ))
+);
 
 -- Reactions
 DROP POLICY IF EXISTS "Reactions are viewable by everyone" ON public.reactions;
