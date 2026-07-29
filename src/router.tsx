@@ -35,6 +35,9 @@ const AccountSettingsPage = lazy(() => import('./pages/social/account-settings')
 const NotificationSettingsPage = lazy(() => import('./pages/social/notification-settings'))
 const AppearanceSettingsPage = lazy(() => import('./pages/social/appearance-settings'))
 const HelpPage = lazy(() => import('./pages/social/help'))
+const SpacesPage = lazy(() => import('./pages/core/spaces-page'))
+const SpaceDetailPage = lazy(() => import('./pages/core/space-detail'))
+const SpaceSettingsPage = lazy(() => import('./pages/core/space-settings'))
 const NotFoundPage = lazy(() => import('./pages/errors/not-found'))
 
 export const router = createBrowserRouter([
@@ -69,6 +72,9 @@ export const router = createBrowserRouter([
           { path: 'notifications', element: <Suspense fallback={<SuspenseLoader />}><NotificationsPage /></Suspense> },
           { path: 'post/:postId', element: <Suspense fallback={<SuspenseLoader />}><PostDetailPage /></Suspense> },
           { path: 'community/:communityId', element: <Suspense fallback={<SuspenseLoader />}><CommunityDetailPage /></Suspense> },
+          { path: 'spaces', element: <Suspense fallback={<SuspenseLoader />}><SpacesPage /></Suspense> },
+          { path: 'space/:slug', element: <Suspense fallback={<SuspenseLoader />}><SpaceDetailPage /></Suspense> },
+          { path: 'space/:slug/settings', element: <Suspense fallback={<SuspenseLoader />}><SpaceSettingsPage /></Suspense> },
           { path: 'profile/:username?', element: <Suspense fallback={<SuspenseLoader />}><ProfilePage /></Suspense> },
           { path: 'settings', element: <Suspense fallback={<SuspenseLoader />}><SettingsPage /></Suspense> },
           { path: 'settings/privacy', element: <Suspense fallback={<SuspenseLoader />}><PrivacyPage /></Suspense> },
