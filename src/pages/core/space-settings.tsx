@@ -20,6 +20,7 @@ export default function SpaceSettingsPage() {
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('');
   const [visibility, setVisibility] = useState<'public' | 'private' | 'hidden'>('public');
+  const [requireApproval, setRequireApproval] = useState(false);
   const [modules, setModules] = useState<SpaceModules>({
     feed: true,
     chat: true,
@@ -38,6 +39,7 @@ export default function SpaceSettingsPage() {
       setDescription(space.description || '');
       setIcon(space.icon);
       setVisibility(space.visibility);
+      setRequireApproval(space.require_approval || false);
       if (space.settings?.modules) {
         setModules(space.settings.modules);
       }
@@ -78,6 +80,7 @@ export default function SpaceSettingsPage() {
           description,
           icon,
           visibility,
+          require_approval: requireApproval,
         },
       },
       {
@@ -181,6 +184,24 @@ export default function SpaceSettingsPage() {
                   <option value="private">Private - Invite only</option>
                   <option value="hidden">Hidden - Only members can see</option>
                 </select>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-bg-secondary">
+                <div>
+                  <p className="font-medium text-text-primary">Require Approval</p>
+                  <p className="text-sm text-text-secondary">New members must be approved before joining</p>
+                </div>
+                <button
+                  onClick={() => setRequireApproval(!requireApproval)}
+                  className={`w-12 h-6 rounded-full transition-colors ${
+                    requireApproval ? 'bg-accent' : 'bg-bg-tertiary'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                      requireApproval ? 'translate-x-6' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
               </div>
               <Button onClick={handleSaveSettings} disabled={updateSpaceMutation.isPending}>
                 {updateSpaceMutation.isPending ? (

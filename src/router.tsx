@@ -39,6 +39,7 @@ const SpacesPage = lazy(() => import('./pages/core/spaces-page'))
 const SpaceDetailPage = lazy(() => import('./pages/core/space-detail'))
 const SpaceSettingsPage = lazy(() => import('./pages/core/space-settings'))
 const ContentDetailPage = lazy(() => import('./pages/core/content-detail'))
+const JoinPage = lazy(() => import('./pages/core/join-page'))
 const NotFoundPage = lazy(() => import('./pages/errors/not-found'))
 
 export const router = createBrowserRouter([
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
       { path: 'verify', element: <Suspense fallback={<SuspenseLoader />}><VerifyPage /></Suspense> },
       { path: 'create-password', element: <Suspense fallback={<SuspenseLoader />}><CreatePasswordPage /></Suspense> },
       { path: 'reset-password', element: <Suspense fallback={<SuspenseLoader />}><ResetPasswordPage /></Suspense> },
+      { path: 'join/:token', element: <Suspense fallback={<SuspenseLoader />}><JoinPage /></Suspense> },
     ],
   },
   {

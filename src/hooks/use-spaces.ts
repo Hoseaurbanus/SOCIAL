@@ -57,14 +57,16 @@ export function useCreateSpace() {
       description, 
       icon, 
       spaceType, 
-      visibility 
+      visibility,
+      requireApproval,
     }: {
       name: string;
       description: string;
       icon: string;
       spaceType: Space['space_type'];
       visibility?: Space['visibility'];
-    }) => createSpace(name, description, icon, spaceType, visibility),
+      requireApproval?: boolean;
+    }) => createSpace(name, description, icon, spaceType, visibility, requireApproval),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
     },
@@ -102,7 +104,7 @@ export function useUpdateSpace() {
       updates 
     }: {
       spaceId: string;
-      updates: Partial<Pick<Space, 'name' | 'description' | 'icon' | 'cover_image' | 'visibility' | 'settings'>>;
+      updates: Partial<Pick<Space, 'name' | 'description' | 'icon' | 'cover_image' | 'visibility' | 'settings' | 'require_approval'>>;
     }) => updateSpace(spaceId, updates),
     onSuccess: (_, { spaceId }) => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });

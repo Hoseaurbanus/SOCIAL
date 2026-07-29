@@ -1,20 +1,25 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
-import { ArrowLeft, Settings, Users, Loader2, Plus, Lock, Globe } from 'lucide-react';
+import { ArrowLeft, Settings, Users, Loader2, Plus, Lock, Globe, UserPlus } from 'lucide-react';
 import { useSpace, useJoinSpace, useLeaveSpace, useSpaceMembers } from '@/hooks/use-spaces';
 import { useContentItems, useToggleReaction } from '@/hooks/use-content';
+import { usePendingApprovals } from '@/hooks/use-invites';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/atoms/button';
 import { EmptyState } from '@/components/molecules/empty-state';
 import { ContentCard } from '@/components/molecules/content-card';
+import { InviteModal } from '@/components/organisms/invite-modal';
+import { PendingApprovals } from '@/components/molecules/pending-approvals';
 
 export default function SpaceDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'about' | 'settings'>('feed');
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(slug || '');
   const { data: members, isLoading: membersLoading } = useSpaceMembers(space?.id || '');
+  const { data: pendingApprovals } = usePendingApprovals(space?.id || '');
   const { data: contentData, isLoading: contentLoading } = useContentItems({
     spaceId: space?.id || '',
   });
@@ -98,12 +103,25 @@ export default function SpaceDetailPage() {
             </div>
           </div>
           {isAdmin && (
-            <Link
-              to={`/space/${space.slug}/settings`}
-              className="p-2 rounded-xl hover:bg-bg-secondary transition-colors"
-            >
-              <Settings className="w-5 h-5 text-text-primary" />
-            </Link>
+            <>
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="p-2 rounded-xl hover:bg-bg-secondary transition-colors relative"
+              >
+                <UserPlus className="w-5 h-5 text-text-primary" />
+                {pendingApprovals && pendingApprovals.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold rounded-full bg-accent text-white">
+                    {pendingApprovals.length}
+                  </span>
+                )}
+              </button>
+              <Link
+                to={`/space/${space.slug}/settings`}
+                className="p-2 rounded-xl hover:bg-bg-secondary transition-colors"
+              >
+                <Settings className="w-5 h-5 text-text-primary" />
+              </Link>
+            </>
           )}
         </div>
 
@@ -219,6 +237,7 @@ export default function SpaceDetailPage() {
 
         {activeTab === 'members' && (
           <div className="space-y-2">
+            {isAdmin && <PendingApprovals spaceId={space.id} />}
             {membersLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-accent" />
@@ -303,6 +322,13 @@ export default function SpaceDetailPage() {
           </div>
         )}
       </div>
+
+      <InviteModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        spaceId={space.id}
+        spaceName={space.name}
+      />
     </div>
   );
 }

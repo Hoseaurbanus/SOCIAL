@@ -34,6 +34,7 @@ export interface Space {
   slug: string;
   space_type: SpaceType;
   visibility: SpaceVisibility;
+  require_approval: boolean;
   created_by: string;
   settings: { modules: SpaceModules };
   metadata: Record<string, unknown>;

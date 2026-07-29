@@ -133,7 +133,8 @@ export async function createSpace(
   description: string,
   icon: string,
   spaceType: Space['space_type'],
-  visibility: Space['visibility'] = 'public'
+  visibility: Space['visibility'] = 'public',
+  requireApproval: boolean = false
 ): Promise<Space> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -154,6 +155,7 @@ export async function createSpace(
       slug,
       space_type: spaceType,
       visibility,
+      require_approval: requireApproval,
       created_by: user.id,
     })
     .select()
@@ -180,7 +182,17 @@ export async function createSpace(
 export async function joinSpace(spaceId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
-  
+
+  const { data: space } = await supabase
+    .from('spaces')
+    .select('visibility')
+    .eq('id', spaceId)
+    .single();
+
+  if (space?.visibility === 'private') {
+    throw new Error('This space is private. You need an invite to join.');
+  }
+
   const { data: memberRole } = await supabase.from('roles').select('id').eq('name', 'member').single();
 
   const { error } = await supabase
@@ -233,7 +245,7 @@ export async function fetchSpaceMembers(spaceId: string): Promise<SpaceMember[]>
 
 export async function updateSpace(
   spaceId: string,
-  updates: Partial<Pick<Space, 'name' | 'description' | 'icon' | 'cover_image' | 'visibility' | 'settings'>>
+  updates: Partial<Pick<Space, 'name' | 'description' | 'icon' | 'cover_image' | 'visibility' | 'settings' | 'require_approval'>>
 ): Promise<Space> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
